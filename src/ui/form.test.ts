@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { buildScenario, fieldForPath, formatCapitalInput, initialForm } from './form'
+import {
+  buildScenario,
+  entitySoftIssues,
+  fieldForPath,
+  formatCapitalInput,
+  initialForm,
+} from './form'
 import type { FormState } from './form'
 
 function form(over: Partial<FormState>): FormState {
@@ -10,7 +16,11 @@ function form(over: Partial<FormState>): FormState {
     ea: '10',
     dayCountBase: '360',
     retencion: '4',
+    ceiling: '50.000.000',
     startDate: '2026-07-26',
+    entities: [{ id: 'e1', name: 'Entidad A' }],
+    allocation: [],
+    nextEntitySeq: 2,
     ...over,
   }
 }
@@ -94,15 +104,61 @@ describe('buildScenario — ladder shape', () => {
     expect(codes(form({ startDate: '2026-02-30' }))).toContain('start_date_invalid')
   })
 
-  it('never hardcodes a fiscal ceiling in M1', () => {
-    const { input } = buildScenario(form({}))
-    expect(input.fiscal.insuranceCeiling).toBe(0)
-  })
-
   it('defaults to base 360 comercial and passes 365 through', () => {
     expect(buildScenario(form({})).input.dayCountBase).toBe(360)
     expect(buildScenario(form({ dayCountBase: '365' })).input.dayCountBase).toBe(365)
     expect(codes(form({ dayCountBase: '364' }))).toContain('base_invalid')
+  })
+})
+
+describe('buildScenario — entities, allocation, ceiling', () => {
+  const twoEntities = [
+    { id: 'e1', name: 'Entidad A' },
+    { id: 'e2', name: 'Entidad B' },
+  ]
+
+  it('parses the ceiling like capital and rejects an empty field', () => {
+    expect(buildScenario(form({})).input.fiscal.insuranceCeiling).toBe(50_000_000)
+    expect(buildScenario(form({ ceiling: '0' })).input.fiscal.insuranceCeiling).toBe(0)
+    expect(codes(form({ ceiling: '' }))).toContain('ceiling_invalid')
+  })
+
+  it('assigns rungs to entities from the allocation, defaulting to the first', () => {
+    const { input } = buildScenario(
+      form({ entities: twoEntities, allocation: ['e1', 'e2'] }),
+    )
+    expect(input.rungs.map((r) => r.entityId)).toEqual(['e1', 'e2', 'e1', 'e1'])
+  })
+
+  it('stale allocation entries pointing at a removed entity fall back to the first', () => {
+    const { input, issues } = buildScenario(
+      form({ entities: twoEntities, allocation: ['gone', 'e2'] }),
+    )
+    expect(issues).toEqual([])
+    expect(input.rungs[0].entityId).toBe('e1')
+    expect(input.rungs[1].entityId).toBe('e2')
+  })
+
+  it('blank entity names never block the math — fallback name plus a soft issue', () => {
+    const f = form({ entities: [{ id: 'e1', name: 'Entidad A' }, { id: 'e2', name: '   ' }] })
+    const { input, issues } = buildScenario(f)
+    expect(issues).toEqual([])
+    expect(input.entities[1].name).toBe('Entidad 2')
+    expect(entitySoftIssues(f)[1]?.code).toBe('entity_name_empty')
+  })
+
+  it('duplicate names (trimmed, case-folded) get a soft issue on later occurrences only', () => {
+    const f = form({
+      entities: [
+        { id: 'e1', name: 'Banco X' },
+        { id: 'e2', name: '  banco x ' },
+      ],
+    })
+    const soft = entitySoftIssues(f)
+    expect(soft[0]).toBeUndefined()
+    expect(soft[1]?.code).toBe('entity_name_duplicate')
+    // Soft: the scenario still computes.
+    expect(buildScenario(f).issues).toEqual([])
   })
 })
 

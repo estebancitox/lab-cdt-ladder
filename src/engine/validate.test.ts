@@ -64,6 +64,21 @@ describe('validateScenario', () => {
     expect(codes(s)).toContain('entity_missing')
   })
 
+  it('rejects rungs pointing at a nonexistent entity', () => {
+    const s = valid()
+    s.rungs[0] = { ...s.rungs[0], entityId: 'ghost' }
+    expect(codes(s)).toContain('entity_missing')
+  })
+
+  it('rejects duplicate entity ids', () => {
+    const s = valid()
+    s.entities = [
+      { id: 'e1', name: 'Entidad A' },
+      { id: 'e1', name: 'Entidad B' },
+    ]
+    expect(codes(s)).toContain('entity_id_duplicate')
+  })
+
   it('rejects retención out of [0, 1) — including percent-passed-as-fraction', () => {
     const s = valid()
     for (const retencionRate of [-0.1, 1, 4, NaN]) {

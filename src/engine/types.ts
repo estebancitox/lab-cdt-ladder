@@ -58,6 +58,24 @@ export interface ScenarioTotals {
   netInterest: number
 }
 
+export interface EntityExposure {
+  entityId: string
+  entityName: string
+  /** Sum of rounded per-rung values for this entity. */
+  principal: number
+  grossInterest: number
+  /**
+   * principal + gross (pre-tax) interest: deposit insurance covers capital
+   * plus accrued interest, so net-of-retención would understate exposure.
+   */
+  exposure: number
+  ceiling: number
+  /** Strictly above the ceiling; exactly-at-ceiling is compliant. */
+  exceeded: boolean
+  /** max(0, exposure − ceiling). */
+  excess: number
+}
+
 export interface ScenarioResult {
   /** Sorted by maturity date ascending. */
   rungs: RungResult[]
@@ -65,6 +83,8 @@ export interface ScenarioResult {
   totals: ScenarioTotals
   blendedEA: number
   nextMaturity: ISODate | null
+  /** One entry per entity that holds at least one rung, in input entity order. */
+  exposures: EntityExposure[]
 }
 
 export interface ValidationIssue {

@@ -5,8 +5,18 @@ import { Header } from './components/Header'
 import { ScenarioForm } from './components/ScenarioForm'
 import { SummaryReadouts } from './components/SummaryReadouts'
 import { LadderChart } from './components/LadderChart'
+import { ExposureChart, ExposureTable } from './components/ExposureChart'
 import { ScheduleTable } from './components/ScheduleTable'
-import { buildScenario, fieldForPath, initialForm, todayISO } from './ui/form'
+import { Warnings } from './components/Warnings'
+import {
+  buildScenario,
+  entityDisplayName,
+  entitySoftIssues,
+  fieldForPath,
+  initialForm,
+  MAX_ENTITIES,
+  todayISO,
+} from './ui/form'
 import type { FormState } from './ui/form'
 import { applyTheme, effectiveTheme, initThemeMeta } from './ui/theme'
 import type { Theme } from './ui/theme'
@@ -41,20 +51,32 @@ export default function App() {
     }
     return byField
   }, [issues])
+  const entityErrors = useMemo(() => entitySoftIssues(form), [form])
 
   // Debounced one-line summary for screen readers: announcing the whole
   // results section per keystroke would flood AT with dozens of changed cells.
   const [announcement, setAnnouncement] = useState('')
   useEffect(() => {
     if (!result) return
+    const exceeded = result.exposures.filter((e) => e.exceeded).length
     const t = setTimeout(() => {
       setAnnouncement(
         `Interés neto total ${formatCOP(result.totals.netInterest)}, ` +
-          `tasa ponderada ${formatPercent(result.blendedEA)} efectiva anual.`,
+          `tasa ponderada ${formatPercent(result.blendedEA)} efectiva anual.` +
+          (exceeded === 1
+            ? ' Una entidad supera el tope del seguro.'
+            : exceeded > 1
+              ? ` ${exceeded} entidades superan el tope del seguro.`
+              : ''),
       )
     }, 800)
     return () => clearTimeout(t)
   }, [result])
+
+  const entityNames = useMemo(
+    () => Object.fromEntries(form.entities.map((e, i) => [e.id, entityDisplayName(e.name, i)])),
+    [form.entities],
+  )
 
   return (
     <>
@@ -71,7 +93,45 @@ export default function App() {
         <ScenarioForm
           form={form}
           errors={errors}
+          entityErrors={entityErrors}
           onChange={(field, value) => setForm((f) => ({ ...f, [field]: value }))}
+          onEntityAdd={() =>
+            setForm((f) => {
+              if (f.entities.length >= MAX_ENTITIES) return f
+              // Letter follows the monotonic sequence, never the list length:
+              // add/remove/add must not mint a duplicate default name.
+              const letter = String.fromCharCode(65 + ((f.nextEntitySeq - 1) % 26))
+              return {
+                ...f,
+                entities: [...f.entities, { id: `e${f.nextEntitySeq}`, name: `Entidad ${letter}` }],
+                nextEntitySeq: f.nextEntitySeq + 1,
+              }
+            })
+          }
+          onEntityRemove={(id) =>
+            setForm((f) => {
+              if (f.entities.length <= 1) return f
+              const entities = f.entities.filter((e) => e.id !== id)
+              return {
+                ...f,
+                entities,
+                allocation: f.allocation.map((a) => (a === id ? entities[0].id : a)),
+              }
+            })
+          }
+          onEntityRename={(id, name) =>
+            setForm((f) => ({
+              ...f,
+              entities: f.entities.map((e) => (e.id === id ? { ...e, name } : e)),
+            }))
+          }
+          onAllocate={(rungIndex, entityId) =>
+            setForm((f) => {
+              const allocation = [...f.allocation]
+              allocation[rungIndex] = entityId
+              return { ...f, allocation }
+            })
+          }
         />
 
         <section className="results" aria-labelledby="h-results">
@@ -83,11 +143,23 @@ export default function App() {
           </p>
           {result ? (
             <>
+              <Warnings exposures={result.exposures} />
               <SummaryReadouts result={result} today={today} />
               <div className="plate">
                 <LadderChart rungs={result.rungs} startDate={input.startDate} today={today} />
               </div>
-              <ScheduleTable result={result} />
+              <div className="plate">
+                <ExposureChart
+                  exposures={result.exposures}
+                  ceiling={input.fiscal.insuranceCeiling}
+                />
+              </div>
+              <ExposureTable exposures={result.exposures} />
+              <ScheduleTable
+                result={result}
+                entityNames={entityNames}
+                showEntity={form.entities.length > 1}
+              />
             </>
           ) : (
             <p className="empty-state" role="status">

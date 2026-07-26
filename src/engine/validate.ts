@@ -27,6 +27,26 @@ export function validateScenario(input: ScenarioInput): ValidationIssue[] {
     })
   }
 
+  const entityIds = new Set(input.entities.map((e) => e.id))
+  const seenIds = new Set<string>()
+  input.entities.forEach((e, i) => {
+    if (seenIds.has(e.id)) {
+      issues.push({
+        code: 'entity_id_duplicate',
+        path: `entities[${i}].id`,
+        message: 'Cada entidad necesita un id único.',
+      })
+    }
+    seenIds.add(e.id)
+    if (e.name.trim() === '') {
+      issues.push({
+        code: 'entity_name_empty',
+        path: `entities[${i}].name`,
+        message: 'Ponle un nombre a cada entidad.',
+      })
+    }
+  })
+
   input.rungs.forEach((r, i) => {
     const at = `rungs[${i}]`
     if (!Number.isSafeInteger(r.principal) || r.principal <= 0) {
@@ -50,11 +70,11 @@ export function validateScenario(input: ScenarioInput): ValidationIssue[] {
         message: 'La tasa E.A. debe estar entre 0 % y 100 %.',
       })
     }
-    if (!r.entityId) {
+    if (!r.entityId || !entityIds.has(r.entityId)) {
       issues.push({
         code: 'entity_missing',
         path: `${at}.entityId`,
-        message: 'Cada peldaño necesita una entidad.',
+        message: 'Cada peldaño necesita una entidad existente.',
       })
     }
   })

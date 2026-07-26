@@ -3,9 +3,12 @@ import type { ScenarioResult } from '../engine'
 
 interface Props {
   result: ScenarioResult
+  /** id → name; the Entidad column renders only when more than one entity exists. */
+  entityNames: Record<string, string>
+  showEntity: boolean
 }
 
-export function ScheduleTable({ result }: Props) {
+export function ScheduleTable({ result, entityNames, showEntity }: Props) {
   return (
     <div className="table-scroll">
       <table className="schedule">
@@ -17,6 +20,7 @@ export function ScheduleTable({ result }: Props) {
               <span className="visually-hidden">Peldaño</span>
             </th>
             <th scope="col">Vence</th>
+            {showEntity && <th scope="col">Entidad</th>}
             <th scope="col" className="num">
               Plazo
             </th>
@@ -39,6 +43,7 @@ export function ScheduleTable({ result }: Props) {
             <tr key={r.id}>
               <th scope="row">{String(i + 1).padStart(2, '0')}</th>
               <td>{formatDateShort(r.maturityDate)}</td>
+              {showEntity && <td>{entityNames[r.entityId] ?? r.entityId}</td>}
               <td className="num">{r.days} d</td>
               <td className="num">{formatCOP(r.principal)}</td>
               <td className="num">{formatCOP(r.grossInterest)}</td>
@@ -49,7 +54,7 @@ export function ScheduleTable({ result }: Props) {
         </tbody>
         <tfoot>
           <tr>
-            <th scope="row" colSpan={3}>
+            <th scope="row" colSpan={showEntity ? 4 : 3}>
               Total
             </th>
             <td className="num">{formatCOP(result.totals.principal)}</td>

@@ -1,4 +1,5 @@
 import { addDays } from './dates'
+import { entityExposures } from './exposure'
 import { periodRate } from './rates'
 import { roundCOP } from './money'
 import type {
@@ -75,5 +76,6 @@ export function computeScenario(input: ScenarioInput): ScenarioResult {
     totals,
     blendedEA: blendedEA(input.rungs),
     nextMaturity: rungs.length > 0 ? rungs[0].maturityDate : null,
+    exposures: entityExposures(input.entities, rungs, input.fiscal.insuranceCeiling),
   }
 }

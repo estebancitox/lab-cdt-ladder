@@ -408,6 +408,162 @@
     color: var(--muted);
   }
 
+  .warnings {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 1.5rem;
+  }
+  .warnings-label {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+  }
+  .warnings ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.875rem;
+    max-width: 62ch;
+  }
+  .warnings li + li {
+    margin-top: 0.35rem;
+  }
+
+  .entity-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  .entity-row input {
+    flex: 1;
+    min-width: 0;
+  }
+  .btn-remove {
+    font-family: var(--mono);
+    font-size: 1rem;
+    line-height: 1;
+    width: 2.4rem;
+    flex: none;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--muted);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .btn-remove:hover:enabled {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  .btn-remove:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .btn-ghost {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--muted);
+    border-radius: 2px;
+    padding: 0.45rem 0.8rem;
+    cursor: pointer;
+  }
+  .btn-ghost:not([aria-disabled='true']):hover {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  .btn-ghost:disabled,
+  .btn-ghost[aria-disabled='true'] {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .alloc-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+  .alloc-row .alloc-label {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    color: var(--muted);
+    flex: none;
+    min-width: 6.5rem;
+  }
+  .alloc-row select {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--mono);
+    font-size: 0.9375rem;
+    background: transparent;
+    border: 1px solid var(--muted);
+    border-radius: 2px;
+    padding: 0.4rem 0.5rem;
+    cursor: pointer;
+  }
+  .alloc-row select option {
+    background: var(--ground);
+    color: var(--ink);
+  }
+
+  /* 85 % ink, not a mid mix: at 55 % the segment measured 1.11:1 against the
+     principal fill — indistinguishable. The 1px plate stroke is the WCAG
+     1.4.11 separator between adjacent meaningful segments. */
+  .ladder .seg-interest {
+    fill: color-mix(in srgb, var(--plate-ink) 85%, var(--plate));
+  }
+  .ladder .seg-excess {
+    fill: var(--signal);
+  }
+  .exposure .bar,
+  .exposure .seg-interest,
+  .exposure .seg-excess {
+    stroke: var(--plate);
+    stroke-width: 1;
+  }
+  .ladder .amount-excess {
+    fill: var(--signal);
+    font-weight: 600;
+  }
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.1rem;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    color: var(--plate-muted);
+    margin-top: 0.6rem;
+  }
+  .sw {
+    display: inline-block;
+    width: 0.7rem;
+    height: 0.7rem;
+    margin-right: 0.35rem;
+    vertical-align: -1px;
+  }
+  .sw-principal {
+    background: var(--plate-muted);
+  }
+  .sw-interest {
+    background: color-mix(in srgb, var(--plate-ink) 85%, var(--plate));
+  }
+  /* Legend key for .seg-excess — the one signal use allowed off the bars. */
+  .sw-excess {
+    background: var(--signal);
+  }
+
+  .results .table-scroll + .table-scroll {
+    margin-top: 1.75rem;
+  }
+
   .empty-state {
     color: var(--muted);
     border: 1px solid var(--line);

@@ -1,6 +1,19 @@
 import { parseISODate, splitCapital, toISODate, validateScenario } from '../engine'
 import type { DayCountBase, ISODate, ScenarioInput, ValidationIssue } from '../engine'
 
+export interface EntityDraft {
+  id: string
+  name: string
+}
+
+export const MAX_ENTITIES = 6
+export const MAX_RUNGS = 12
+
+/** Blank names never block the math — they render under a generic fallback. */
+export function entityDisplayName(name: string, index: number): string {
+  return name.trim() || `Entidad ${index + 1}`
+}
+
 export interface FormState {
   capital: string
   rungCount: string
@@ -8,7 +21,12 @@ export interface FormState {
   ea: string
   dayCountBase: string
   retencion: string
+  ceiling: string
   startDate: string
+  entities: EntityDraft[]
+  /** entityId per rung index; missing or stale entries fall back to the first entity. */
+  allocation: string[]
+  nextEntitySeq: number
 }
 
 /** The user's local calendar day — UI concern only; the engine never asks the clock. */
@@ -25,7 +43,13 @@ export function initialForm(): FormState {
     ea: '10',
     dayCountBase: '360',
     retencion: '4',
+    // Editable default, labeled "verifica la cobertura vigente" in the UI —
+    // never presented as current truth.
+    ceiling: '50.000.000',
     startDate: todayISO(),
+    entities: [{ id: 'e1', name: 'Entidad A' }],
+    allocation: [],
+    nextEntitySeq: 2,
   }
 }
 
@@ -41,7 +65,7 @@ export function formatCapitalInput(raw: string): string {
   return digits === '' ? '' : groupFormatter.format(Number(digits))
 }
 
-function parseCapital(s: string): number | null {
+function parseCOPDigits(s: string): number | null {
   const digits = s.replace(/\D/g, '')
   return digits === '' ? null : Number(digits)
 }
@@ -64,17 +88,15 @@ export interface ParsedForm {
   issues: ValidationIssue[]
 }
 
-const ENTITY_ID = 'e1'
-
 /**
- * Parse the M1 form into a ScenarioInput. Field-level issues carry `form.*`
+ * Parse the form into a ScenarioInput. Field-level issues carry `form.*`
  * paths so the UI can anchor messages; the engine's validateScenario runs on
  * top as the source of truth for range semantics.
  */
 export function buildScenario(form: FormState): ParsedForm {
   const issues: ValidationIssue[] = []
 
-  const capital = parseCapital(form.capital)
+  const capital = parseCOPDigits(form.capital)
   if (capital === null || !Number.isSafeInteger(capital) || capital <= 0) {
     issues.push({
       code: 'capital_invalid',
@@ -84,11 +106,11 @@ export function buildScenario(form: FormState): ParsedForm {
   }
 
   const count = parseIntStrict(form.rungCount)
-  if (count === null || count < 1 || count > 12) {
+  if (count === null || count < 1 || count > MAX_RUNGS) {
     issues.push({
       code: 'count_invalid',
       path: 'form.rungCount',
-      message: 'Entre 1 y 12 peldaños.',
+      message: `Entre 1 y ${MAX_RUNGS} peldaños.`,
     })
   }
 
@@ -99,7 +121,7 @@ export function buildScenario(form: FormState): ParsedForm {
       path: 'form.spacingDays',
       message: 'El espaciado debe ser un número entero de días, mayor que cero.',
     })
-  } else if (count !== null && count >= 1 && count <= 12 && spacing * count > 3650) {
+  } else if (count !== null && count >= 1 && count <= MAX_RUNGS && spacing * count > 3650) {
     issues.push({
       code: 'spacing_too_long',
       path: 'form.spacingDays',
@@ -135,6 +157,15 @@ export function buildScenario(form: FormState): ParsedForm {
     })
   }
 
+  const ceiling = parseCOPDigits(form.ceiling)
+  if (ceiling === null || !Number.isSafeInteger(ceiling) || ceiling < 0) {
+    issues.push({
+      code: 'ceiling_invalid',
+      path: 'form.ceiling',
+      message: 'Escribe el tope del seguro en pesos, cero o mayor.',
+    })
+  }
+
   let startDate = form.startDate
   try {
     parseISODate(startDate)
@@ -147,17 +178,27 @@ export function buildScenario(form: FormState): ParsedForm {
     startDate = todayISO()
   }
 
+  const rawEntities =
+    form.entities.length > 0 ? form.entities : [{ id: 'e1', name: 'Entidad A' }]
+  const entities = rawEntities.map((e, i) => ({ id: e.id, name: entityDisplayName(e.name, i) }))
+
   if (issues.length > 0) {
     return {
       input: {
         startDate,
         rungs: [],
-        entities: [{ id: ENTITY_ID, name: 'Entidad' }],
+        entities,
         fiscal: { retencionRate: 0, insuranceCeiling: 0 },
         dayCountBase: dayCountBase ?? 360,
       },
       issues,
     }
+  }
+
+  const entityIds = new Set(entities.map((e) => e.id))
+  const entityFor = (i: number): string => {
+    const id = form.allocation[i]
+    return id && entityIds.has(id) ? id : entities[0].id
   }
 
   const amounts = splitCapital(capital!, count!)
@@ -168,17 +209,16 @@ export function buildScenario(form: FormState): ParsedForm {
       principal,
       days: spacing! * (i + 1),
       ea: eaPct! / 100,
-      entityId: ENTITY_ID,
+      entityId: entityFor(i),
     })),
-    entities: [{ id: ENTITY_ID, name: 'Entidad' }],
-    // insuranceCeiling stays 0 until M2 introduces the editable, labeled field.
-    fiscal: { retencionRate: retencionPct! / 100, insuranceCeiling: 0 },
+    entities,
+    fiscal: { retencionRate: retencionPct! / 100, insuranceCeiling: ceiling! },
     dayCountBase: dayCountBase!,
   }
   return { input, issues: validateScenario(input) }
 }
 
-/** Map engine/form issue paths to the M1 form field that should show them. */
+/** Map engine/form issue paths to the form field that should show them. */
 export function fieldForPath(path: string): keyof FormState | null {
   if (path === 'form.capital' || path.endsWith('.principal')) return 'capital'
   if (path === 'form.rungCount' || path === 'rungs') return 'rungCount'
@@ -186,6 +226,41 @@ export function fieldForPath(path: string): keyof FormState | null {
   if (path === 'form.ea' || path.endsWith('.ea')) return 'ea'
   if (path === 'form.dayCountBase' || path === 'dayCountBase') return 'dayCountBase'
   if (path === 'form.retencion' || path === 'fiscal.retencionRate') return 'retencion'
+  if (path === 'form.ceiling' || path === 'fiscal.insuranceCeiling') return 'ceiling'
   if (path === 'form.startDate' || path === 'startDate') return 'startDate'
   return null
+}
+
+/**
+ * Non-blocking per-entity name issues, keyed by list index. Shown inline but
+ * never unmounting the results: a name is a label, not an input to the math.
+ * Duplicates matter because the insurance ceiling is evaluated per entity —
+ * two rows for one real institution would silently split the exposure.
+ */
+export function entitySoftIssues(form: FormState): Record<number, ValidationIssue> {
+  const out: Record<number, ValidationIssue> = {}
+  const seen = new Set<string>()
+  form.entities.forEach((e, i) => {
+    const trimmed = e.name.trim()
+    if (trimmed === '') {
+      out[i] = {
+        code: 'entity_name_empty',
+        path: `entities[${i}].name`,
+        message: 'Ponle un nombre a la entidad.',
+      }
+      return
+    }
+    const key = trimmed.toLocaleLowerCase('es')
+    if (seen.has(key)) {
+      out[i] = {
+        code: 'entity_name_duplicate',
+        path: `entities[${i}].name`,
+        message:
+          'Hay otra entidad con el mismo nombre. El tope del seguro se evalúa por entidad: si son la misma institución, usa una sola.',
+      }
+    } else {
+      seen.add(key)
+    }
+  })
+  return out
 }
