@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { blendedEA, computeRung, computeScenario } from './scenario'
-import type { FiscalParams, RungInput, ScenarioInput } from './types'
+import type { DayCountBase, FiscalParams, RungInput, ScenarioInput } from './types'
 
 const FISCAL: FiscalParams = { retencionRate: 0.04, insuranceCeiling: 50_000_000 }
 
@@ -8,8 +8,20 @@ function rung(over: Partial<RungInput>): RungInput {
   return { id: 'r1', principal: 10_000_000, days: 90, ea: 0.1, entityId: 'e1', ...over }
 }
 
-function scenario(rungs: RungInput[], fiscal: FiscalParams = FISCAL): ScenarioInput {
-  return { startDate: '2026-07-26', rungs, entities: [{ id: 'e1', name: 'Entidad A' }], fiscal }
+// Historical measured values in this file were pinned on base 365; the
+// helpers keep that base explicit while base-360 cases set their own.
+function scenario(
+  rungs: RungInput[],
+  fiscal: FiscalParams = FISCAL,
+  dayCountBase: DayCountBase = 365,
+): ScenarioInput {
+  return {
+    startDate: '2026-07-26',
+    rungs,
+    entities: [{ id: 'e1', name: 'Entidad A' }],
+    fiscal,
+    dayCountBase,
+  }
 }
 
 // Deterministic PRNG for property-style tests (no Math.random in tests).
@@ -25,7 +37,7 @@ function mulberry32(seed: number): () => number {
 
 describe('computeRung', () => {
   it('measured base case: 850M at 13,5 % E.A., 90 days', () => {
-    const r = computeRung(rung({ principal: 850_000_000, ea: 0.135 }), '2026-07-26', FISCAL)
+    const r = computeRung(rung({ principal: 850_000_000, ea: 0.135 }), '2026-07-26', FISCAL, 365)
     // Measured raw gross: 26_959_524.2123186
     expect(r.grossInterest).toBe(26_959_524)
     expect(r.retencion).toBe(1_078_381) // roundCOP(26_959_524 * 0.04) = roundCOP(1_078_380.96)
@@ -34,16 +46,18 @@ describe('computeRung', () => {
   })
 
   it('retención 0 % → net equals gross bit-for-bit', () => {
-    const r = computeRung(rung({ principal: 850_000_000, ea: 0.135 }), '2026-07-26', {
-      ...FISCAL,
-      retencionRate: 0,
-    })
+    const r = computeRung(
+      rung({ principal: 850_000_000, ea: 0.135 }),
+      '2026-07-26',
+      { ...FISCAL, retencionRate: 0 },
+      365,
+    )
     expect(r.retencion).toBe(0)
     expect(r.netInterest).toBe(r.grossInterest)
   })
 
   it('E.A. 0 % → all-zero interest, every field finite', () => {
-    const r = computeRung(rung({ ea: 0 }), '2026-07-26', FISCAL)
+    const r = computeRung(rung({ ea: 0 }), '2026-07-26', FISCAL, 365)
     expect(r.grossInterest).toBe(0)
     expect(r.retencion).toBe(0)
     expect(r.netInterest).toBe(0)
@@ -59,10 +73,12 @@ describe('retención rounding policy — per rung, on the rounded gross', () => 
     // On the rounded gross: roundCOP(7 × 0.07) = roundCOP(0.49) = 0.
     // On the raw gross: roundCOP(7.4 × 0.07) = roundCOP(0.518) = 1.
     // At 4 % the two bases are provably indistinguishable for every input.
-    const r = computeRung(rung({ principal: 100, days: 365, ea: 0.074 }), '2026-07-26', {
-      ...FISCAL,
-      retencionRate: 0.07,
-    })
+    const r = computeRung(
+      rung({ principal: 100, days: 365, ea: 0.074 }),
+      '2026-07-26',
+      { ...FISCAL, retencionRate: 0.07 },
+      365,
+    )
     expect(r.grossInterest).toBe(7)
     expect(r.retencion).toBe(0)
     expect(r.netInterest).toBe(7)
@@ -122,6 +138,7 @@ describe('safe-integer output guard', () => {
       rung({ principal: 999_999_999_999, days: 3650, ea: 1 }),
       '2026-07-26',
       FISCAL,
+      365,
     )
     expect(Number.isSafeInteger(r.grossInterest)).toBe(true)
     expect(Number.isSafeInteger(r.netInterest)).toBe(true)
@@ -129,8 +146,54 @@ describe('safe-integer output guard', () => {
 
   it('throws instead of silently losing pesos beyond safe-integer range', () => {
     expect(() =>
-      computeRung(rung({ principal: 999_999_999_999_999, days: 3650, ea: 1 }), '2026-07-26', FISCAL),
+      computeRung(rung({ principal: 999_999_999_999_999, days: 3650, ea: 1 }), '2026-07-26', FISCAL, 365),
     ).toThrow(RangeError)
+  })
+})
+
+describe('base 360 comercial — reproduction fixtures', () => {
+  // Anonymized figures-only fixtures for the comercial liquidation base that
+  // Colombian CDT certificates state as "Base liquidación: 360".
+
+  it('fixture A: 50M, 390 días, 13,50 % E.A. — engine path and statement path', () => {
+    // Engine (unrounded period rate): 50M × ((1.135)^(390/360) − 1)
+    // = 7_352_037.89… → 7_352_038.
+    const r = computeRung(
+      rung({ principal: 50_000_000, days: 390, ea: 0.135 }),
+      '2026-07-26',
+      FISCAL,
+      360,
+    )
+    expect(r.grossInterest).toBe(7_352_038)
+
+    // Documented statement reproduction: banks round the period rate to four
+    // decimals AS A PERCENT (14.7041 %) before applying it, which yields
+    // bruto 7_352_050 / retención 294_082 / neto 7_057_968 to the peso.
+    const statementRate = Math.round((Math.pow(1.135, 390 / 360) - 1) * 1e6) / 1e6
+    expect(statementRate).toBe(0.147041)
+    const statementGross = Math.round(50_000_000 * statementRate)
+    expect(statementGross).toBe(7_352_050)
+    expect(Math.round(statementGross * 0.04)).toBe(294_082)
+    expect(statementGross - 294_082).toBe(7_057_968)
+
+    // The engine's unrounded path must stay within half a rate-rounding step
+    // of the statement figure: 0.5e-6 × principal = 25 pesos here.
+    expect(Math.abs(r.grossInterest - statementGross)).toBeLessThanOrEqual(
+      50_000_000 * 0.5e-6,
+    )
+  })
+
+  it('fixture B: 44M, 360 días, 13,60 % E.A. — 360/360 collapses to the E.A. exactly', () => {
+    // Raw gross is 5_983_999.999999995 — also a roundCOP float-noise case.
+    const r = computeRung(
+      rung({ principal: 44_000_000, days: 360, ea: 0.136 }),
+      '2026-07-26',
+      FISCAL,
+      360,
+    )
+    expect(r.grossInterest).toBe(5_984_000)
+    expect(r.retencion).toBe(239_360)
+    expect(r.netInterest).toBe(5_744_640)
   })
 })
 

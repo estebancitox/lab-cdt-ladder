@@ -59,6 +59,14 @@ export function validateScenario(input: ScenarioInput): ValidationIssue[] {
     }
   })
 
+  if (input.dayCountBase !== 360 && input.dayCountBase !== 365) {
+    issues.push({
+      code: 'day_count_base_invalid',
+      path: 'dayCountBase',
+      message: 'La base de liquidación debe ser 360 o 365.',
+    })
+  }
+
   const f = input.fiscal
   if (!Number.isFinite(f.retencionRate) || f.retencionRate < 0 || f.retencionRate >= 1) {
     issues.push({

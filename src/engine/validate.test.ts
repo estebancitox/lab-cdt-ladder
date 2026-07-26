@@ -11,6 +11,7 @@ function valid(): ScenarioInput {
     ],
     entities: [{ id: 'e1', name: 'Entidad A' }],
     fiscal: { retencionRate: 0.04, insuranceCeiling: 50_000_000 },
+    dayCountBase: 360,
   }
 }
 
@@ -68,6 +69,17 @@ describe('validateScenario', () => {
     for (const retencionRate of [-0.1, 1, 4, NaN]) {
       s.fiscal = { ...s.fiscal, retencionRate }
       expect(codes(s)).toContain('retencion_out_of_range')
+    }
+  })
+
+  it('accepts both liquidation bases, rejects anything else', () => {
+    for (const dayCountBase of [360, 365] as const) {
+      expect(codes({ ...valid(), dayCountBase })).toEqual([])
+    }
+    for (const bad of [364, 0, 366]) {
+      expect(
+        codes({ ...valid(), dayCountBase: bad as unknown as 360 }),
+      ).toContain('day_count_base_invalid')
     }
   })
 

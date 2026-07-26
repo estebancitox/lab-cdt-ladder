@@ -1,11 +1,12 @@
 import { parseISODate, splitCapital, toISODate, validateScenario } from '../engine'
-import type { ISODate, ScenarioInput, ValidationIssue } from '../engine'
+import type { DayCountBase, ISODate, ScenarioInput, ValidationIssue } from '../engine'
 
 export interface FormState {
   capital: string
   rungCount: string
   spacingDays: string
   ea: string
+  dayCountBase: string
   retencion: string
   startDate: string
 }
@@ -22,6 +23,7 @@ export function initialForm(): FormState {
     rungCount: '4',
     spacingDays: '90',
     ea: '10',
+    dayCountBase: '360',
     retencion: '4',
     startDate: todayISO(),
   }
@@ -114,6 +116,16 @@ export function buildScenario(form: FormState): ParsedForm {
     })
   }
 
+  const dayCountBase: DayCountBase | null =
+    form.dayCountBase === '360' ? 360 : form.dayCountBase === '365' ? 365 : null
+  if (dayCountBase === null) {
+    issues.push({
+      code: 'base_invalid',
+      path: 'form.dayCountBase',
+      message: 'La base de liquidación debe ser 360 o 365.',
+    })
+  }
+
   const retencionPct = parsePercent(form.retencion)
   if (retencionPct === null || retencionPct < 0 || retencionPct >= 100) {
     issues.push({
@@ -142,6 +154,7 @@ export function buildScenario(form: FormState): ParsedForm {
         rungs: [],
         entities: [{ id: ENTITY_ID, name: 'Entidad' }],
         fiscal: { retencionRate: 0, insuranceCeiling: 0 },
+        dayCountBase: dayCountBase ?? 360,
       },
       issues,
     }
@@ -160,6 +173,7 @@ export function buildScenario(form: FormState): ParsedForm {
     entities: [{ id: ENTITY_ID, name: 'Entidad' }],
     // insuranceCeiling stays 0 until M2 introduces the editable, labeled field.
     fiscal: { retencionRate: retencionPct! / 100, insuranceCeiling: 0 },
+    dayCountBase: dayCountBase!,
   }
   return { input, issues: validateScenario(input) }
 }
@@ -170,6 +184,7 @@ export function fieldForPath(path: string): keyof FormState | null {
   if (path === 'form.rungCount' || path === 'rungs') return 'rungCount'
   if (path === 'form.spacingDays' || path.endsWith('.days')) return 'spacingDays'
   if (path === 'form.ea' || path.endsWith('.ea')) return 'ea'
+  if (path === 'form.dayCountBase' || path === 'dayCountBase') return 'dayCountBase'
   if (path === 'form.retencion' || path === 'fiscal.retencionRate') return 'retencion'
   if (path === 'form.startDate' || path === 'startDate') return 'startDate'
   return null

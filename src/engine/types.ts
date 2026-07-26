@@ -1,6 +1,14 @@
 /** Date-only ISO string 'YYYY-MM-DD'. The engine never does Date millisecond math. */
 export type ISODate = string
 
+/**
+ * Denominator of the period-rate exponent. Colombian CDTs usually liquidate
+ * on the 360 "comercial" base (it appears on the certificate as "Base
+ * liquidación"); 365 is the ACT/365 alternative. Calendar maturities always
+ * count real days — only the exponent changes.
+ */
+export type DayCountBase = 360 | 365
+
 export interface FiscalParams {
   /** Retención en la fuente on interest, as a fraction (0.04 = 4 %). User-supplied, never current truth. */
   retencionRate: number
@@ -29,6 +37,7 @@ export interface ScenarioInput {
   rungs: RungInput[]
   entities: Entity[]
   fiscal: FiscalParams
+  dayCountBase: DayCountBase
 }
 
 export interface RungResult extends RungInput {

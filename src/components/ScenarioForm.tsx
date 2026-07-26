@@ -114,6 +114,26 @@ export function ScenarioForm({ form, errors, onChange }: Props) {
           )}
         </Field>
 
+        <Field
+          id="dayCountBase"
+          label="Base de liquidación"
+          hint="Aparece en tu constancia como 'Base liquidación'. 360 comercial es lo usual en CDTs."
+          error={errors.dayCountBase}
+        >
+          {(describedBy, invalid) => (
+            <select
+              id="dayCountBase"
+              value={form.dayCountBase}
+              onChange={(e) => onChange('dayCountBase', e.target.value)}
+              aria-describedby={describedBy}
+              aria-invalid={invalid || undefined}
+            >
+              <option value="360">360 comercial (usual en CDTs)</option>
+              <option value="365">365</option>
+            </select>
+          )}
+        </Field>
+
         <Field id="startDate" label="Fecha de inicio" error={errors.startDate}>
           {(describedBy, invalid) => (
             <input

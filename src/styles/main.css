@@ -22,7 +22,8 @@
     min-width: 0;
   }
   button,
-  input {
+  input,
+  select {
     font: inherit;
     color: inherit;
   }
@@ -206,7 +207,8 @@
     font-size: 0.875rem;
     margin-bottom: 0.3rem;
   }
-  .field input {
+  .field input,
+  .field select {
     width: 100%;
     font-family: var(--mono);
     font-size: 1rem;
@@ -217,7 +219,15 @@
     border-radius: 2px;
     padding: 0.5rem 0.625rem;
   }
-  .field input:hover {
+  .field select {
+    cursor: pointer;
+  }
+  .field select option {
+    background: var(--ground);
+    color: var(--ink);
+  }
+  .field input:hover,
+  .field select:hover {
     border-color: var(--ink);
   }
   .field input[aria-invalid='true'] {

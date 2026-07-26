@@ -8,6 +8,7 @@ function form(over: Partial<FormState>): FormState {
     rungCount: '4',
     spacingDays: '90',
     ea: '10',
+    dayCountBase: '360',
     retencion: '4',
     startDate: '2026-07-26',
     ...over,
@@ -96,6 +97,12 @@ describe('buildScenario — ladder shape', () => {
   it('never hardcodes a fiscal ceiling in M1', () => {
     const { input } = buildScenario(form({}))
     expect(input.fiscal.insuranceCeiling).toBe(0)
+  })
+
+  it('defaults to base 360 comercial and passes 365 through', () => {
+    expect(buildScenario(form({})).input.dayCountBase).toBe(360)
+    expect(buildScenario(form({ dayCountBase: '365' })).input.dayCountBase).toBe(365)
+    expect(codes(form({ dayCountBase: '364' }))).toContain('base_invalid')
   })
 })
 

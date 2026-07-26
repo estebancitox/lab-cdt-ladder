@@ -30,13 +30,17 @@ deserve which toolchain is the point.
 
 A pure TypeScript module (`src/engine/`, no React imports) does all the money
 math. Effective annual rates convert to period interest as
-`(1 + EA)^(days/365) − 1` (ACT/365 fixed); gross interest rounds to whole COP
-per rung as a cash event; withholding (retención en la fuente) is computed on
-that rounded gross so every table row reconciles by hand; the blended rate is
-the principal×days-weighted average of rung rates. Dates are date-only ISO
-strings with calendar-day arithmetic — no `Date` millisecond math, so results
-are identical in any timezone. The test suite runs twice in CI
-(`TZ=America/Bogota` and `TZ=UTC`) to prove it.
+`(1 + EA)^(days/base) − 1`, where the liquidation base is selectable: **360
+"comercial"** — the convention Colombian CDT certificates state as "Base
+liquidación", and the default — or 365. Calendar maturities always count real
+days; only the exponent changes. Gross interest rounds to whole COP per rung
+as a cash event; withholding (retención en la fuente) is computed on that
+rounded gross so every table row reconciles by hand; the blended rate is the
+principal×days-weighted average of rung rates. The suite includes
+reproduction fixtures against real-world comercial-base figures. Dates are
+date-only ISO strings with calendar-day arithmetic — no `Date` millisecond
+math, so results are identical in any timezone. The test suite runs twice in
+CI (`TZ=America/Bogota` and `TZ=UTC`) to prove it.
 
 ## Fiscal parameters are inputs, not facts
 
@@ -62,6 +66,7 @@ No badge — the pipeline is the statement.
 | `Número de peldaños` | How many CDTs the ladder holds (1–12) |
 | `Espaciado entre vencimientos` | Days between one maturity and the next; rung *n* matures at *n* × spacing |
 | `Tasa E.A.` | Effective annual rate applied to every rung — user-supplied, never fetched |
+| `Base de liquidación` | Exponent base for the rate conversion: 360 comercial (the CDT-certificate convention, default) or 365 |
 | `Fecha de inicio` | Purchase date; maturities and the today line follow it |
 | `Retención en la fuente` | Withholding on interest, editable — check the current tariff |
 | `claro / oscuro` | Theme toggle; the instrument plate stays dark in both |
