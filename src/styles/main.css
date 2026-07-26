@@ -1,0 +1,438 @@
+@layer reset, base, layout, components, motion;
+
+/* ---------------------------------------------------------------- reset */
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  body,
+  h1,
+  h2,
+  p,
+  dl,
+  dd,
+  fieldset {
+    margin: 0;
+  }
+  fieldset {
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  button,
+  input {
+    font: inherit;
+    color: inherit;
+  }
+  svg {
+    display: block;
+  }
+}
+
+/* ----------------------------------------------------------------- base */
+@layer base {
+  :root {
+    /* themed page tokens — portfolio system */
+    --ground: #f3f5f6;
+    --ink: #171a1e;
+    --muted: #5a6470;
+    --line: #d9dee1;
+    --accent: #b03d00;
+    /* fixed component tokens — the instrument plate is never themed */
+    --plate: #14171b;
+    --plate-ink: #e6e9ea;
+    --plate-muted: #8b939c;
+    --plate-line: #2a2f35;
+    --signal: #ff8a50;
+    /* light-only seam that seats the dark plate on a light page */
+    --plate-edge: #d9dee1;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+    --sans: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+    --pad: max(clamp(1.25rem, 5vw, 3rem), calc((100% - 72rem) / 2));
+    color-scheme: light;
+  }
+  [data-theme='dark'] {
+    color-scheme: dark;
+    --ground: #14171b;
+    --ink: #e6e9ea;
+    --muted: #8b939c;
+    --line: #2a2f35;
+    --accent: #ff8a50;
+    --plate-edge: #2a2f35;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --ground: #14171b;
+      --ink: #e6e9ea;
+      --muted: #8b939c;
+      --line: #2a2f35;
+      --accent: #ff8a50;
+      --plate-edge: #2a2f35;
+    }
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 1rem/1.6 var(--sans);
+    font-synthesis: none;
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--ground);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+  a:hover {
+    text-decoration-thickness: 2px;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* --------------------------------------------------------------- layout */
+@layer layout {
+  .site-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem var(--pad);
+    border-bottom: 1px solid var(--line);
+  }
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.5rem;
+    padding: clamp(1.5rem, 4vh, 2.5rem) var(--pad) 3.5rem;
+  }
+  main > * {
+    min-width: 0;
+  }
+  @media (min-width: 60em) {
+    main {
+      grid-template-columns: 21rem minmax(0, 1fr);
+      gap: clamp(2rem, 4vw, 3.5rem);
+      align-items: start;
+    }
+  }
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 2rem var(--pad) 2.5rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+}
+
+/* ----------------------------------------------------------- components */
+@layer components {
+  .wordmark {
+    font-family: var(--mono);
+    font-size: 0.9375rem;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .wordmark:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+  }
+  .wordmark .slash {
+    color: var(--accent);
+  }
+  .theme-toggle {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 0.35rem 0.7rem;
+    cursor: pointer;
+  }
+  .theme-toggle:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+  }
+
+  form fieldset {
+    margin-bottom: 1.75rem;
+  }
+  legend {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.9rem;
+  }
+  .field {
+    margin-bottom: 1rem;
+  }
+  .field label {
+    display: block;
+    font-size: 0.875rem;
+    margin-bottom: 0.3rem;
+  }
+  .field input {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 1rem;
+    background: transparent;
+    /* --muted, not --line: the border is the control's only boundary and
+       must clear the 3:1 non-text contrast minimum (--line measures 1.24:1). */
+    border: 1px solid var(--muted);
+    border-radius: 2px;
+    padding: 0.5rem 0.625rem;
+  }
+  .field input:hover {
+    border-color: var(--ink);
+  }
+  .field input[aria-invalid='true'] {
+    border-color: var(--ink);
+  }
+  .field .hint,
+  .field .error {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    max-width: 34ch;
+  }
+  .field .error {
+    color: var(--ink);
+    padding-left: 0.6rem;
+    border-left: 2px solid var(--ink);
+  }
+
+  .readouts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .dataline {
+    position: relative;
+    padding: 0.7rem 0.9rem;
+  }
+  .dataline::before,
+  .dataline::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+  }
+  .dataline::before {
+    top: 0;
+    left: 0;
+    border-top: 1.5px solid var(--muted);
+    border-left: 1.5px solid var(--muted);
+  }
+  .dataline::after {
+    bottom: 0;
+    right: 0;
+    border-bottom: 1.5px solid var(--muted);
+    border-right: 1.5px solid var(--muted);
+  }
+  .dataline dt {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.35rem;
+    white-space: nowrap;
+  }
+  .dataline .value {
+    font-family: var(--mono);
+    font-size: 1.1875rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .dataline .hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.15rem;
+  }
+
+  .plate {
+    background: var(--plate);
+    border: 1px solid var(--plate-edge);
+    border-radius: 2px;
+    padding: clamp(0.75rem, 2vw, 1.25rem);
+    margin-bottom: 1.75rem;
+  }
+  .ladder-wrap {
+    width: 100%;
+  }
+  .ladder text {
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .ladder .grid {
+    stroke: var(--plate-line);
+    stroke-width: 1;
+  }
+  .ladder .axis {
+    stroke: var(--plate-line);
+    stroke-width: 1;
+  }
+  .ladder .axis-label,
+  .ladder .idx {
+    fill: var(--plate-muted);
+  }
+  .ladder .bar {
+    fill: var(--plate-muted);
+  }
+  .ladder .m-tick {
+    fill: var(--plate-ink);
+  }
+  .ladder .bar-label,
+  .ladder .bar-date-in {
+    fill: var(--plate);
+    font-weight: 600;
+  }
+  .ladder .bar-date {
+    fill: var(--plate-ink);
+  }
+  .ladder .today-line {
+    stroke: var(--plate-ink);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+  }
+  .ladder .today-label {
+    fill: var(--plate-ink);
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+  .schedule {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.875rem;
+  }
+  .schedule caption {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+  }
+  .schedule th,
+  .schedule td {
+    padding: 0.5rem 0 0.5rem 1rem;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    white-space: nowrap;
+  }
+  .schedule th:first-child,
+  .schedule td:first-child {
+    padding-left: 0;
+  }
+  .schedule thead th {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .schedule .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .schedule tbody td.num,
+  .schedule tfoot td.num {
+    font-family: var(--mono);
+  }
+  .schedule tbody th[scope='row'] {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .schedule tfoot th,
+  .schedule tfoot td {
+    border-bottom: 0;
+    border-top: 1px solid var(--muted);
+    font-weight: 600;
+  }
+  .schedule tfoot th {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .empty-state {
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 1.25rem;
+    max-width: 46ch;
+  }
+
+  .disclaimer {
+    max-width: 62ch;
+  }
+  .colophon {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    margin-top: 0.9rem;
+  }
+}
+
+/* --------------------------------------------------------------- motion */
+@layer motion {
+  body {
+    transition: background-color 0.25s, color 0.25s;
+  }
+  .ladder .bar {
+    transition: width 0.2s ease-out;
+  }
+  .ladder .m-tick {
+    transition: x 0.2s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}

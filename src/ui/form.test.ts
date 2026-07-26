@@ -1,0 +1,120 @@
+import { describe, expect, it } from 'vitest'
+import { buildScenario, fieldForPath, formatCapitalInput, initialForm } from './form'
+import type { FormState } from './form'
+
+function form(over: Partial<FormState>): FormState {
+  return {
+    capital: '50.000.000',
+    rungCount: '4',
+    spacingDays: '90',
+    ea: '10',
+    retencion: '4',
+    startDate: '2026-07-26',
+    ...over,
+  }
+}
+
+function codes(f: FormState): string[] {
+  return buildScenario(f).issues.map((i) => i.code)
+}
+
+describe('formatCapitalInput', () => {
+  it('groups digits with es-CO dots and strips everything else', () => {
+    expect(formatCapitalInput('50000000')).toBe('50.000.000')
+    expect(formatCapitalInput('50.000.000')).toBe('50.000.000')
+    expect(formatCapitalInput('abc12x34')).toBe('1.234')
+    expect(formatCapitalInput('')).toBe('')
+  })
+
+  it('caps input at 12 digits so engine output stays peso-exact', () => {
+    expect(formatCapitalInput('9'.repeat(20))).toBe('999.999.999.999')
+  })
+})
+
+describe('buildScenario — percent parsing', () => {
+  it('accepts decimal comma, decimal point, and % suffix as the same rate', () => {
+    for (const ea of ['13,5', '13.5', '13,5 %', '13.5%']) {
+      const { input, issues } = buildScenario(form({ ea }))
+      expect(issues).toEqual([])
+      expect(input.rungs[0].ea).toBeCloseTo(0.135, 12)
+    }
+  })
+
+  it('converts retención to a fraction', () => {
+    const { input } = buildScenario(form({ retencion: '4' }))
+    expect(input.fiscal.retencionRate).toBeCloseTo(0.04, 12)
+  })
+
+  it('accepts E.A. 100 but rejects beyond, negatives, and garbage', () => {
+    expect(codes(form({ ea: '100' }))).toEqual([])
+    expect(codes(form({ ea: '100,1' }))).toContain('ea_invalid')
+    expect(codes(form({ ea: '-1' }))).toContain('ea_invalid')
+    expect(codes(form({ ea: 'diez' }))).toContain('ea_invalid')
+    expect(codes(form({ ea: '' }))).toContain('ea_invalid')
+  })
+
+  it('rejects retención of exactly 100 (exclusive bound)', () => {
+    expect(codes(form({ retencion: '100' }))).toContain('retencion_invalid')
+    expect(codes(form({ retencion: '0' }))).toEqual([])
+  })
+})
+
+describe('buildScenario — ladder shape', () => {
+  it('splits capital exactly and terms are n × spacing', () => {
+    const { input, issues } = buildScenario(form({ capital: '50.000.000', rungCount: '3' }))
+    expect(issues).toEqual([])
+    expect(input.rungs.map((r) => r.principal)).toEqual([16_666_667, 16_666_667, 16_666_666])
+    expect(input.rungs.map((r) => r.days)).toEqual([90, 180, 270])
+    expect(input.rungs.reduce((a, r) => a + r.principal, 0)).toBe(50_000_000)
+  })
+
+  it('enforces the 10-year cap on the last maturity: 3650 passes, 3651 fails', () => {
+    expect(codes(form({ rungCount: '1', spacingDays: '3650' }))).toEqual([])
+    expect(codes(form({ rungCount: '1', spacingDays: '3651' }))).toContain('spacing_too_long')
+    expect(codes(form({ rungCount: '10', spacingDays: '365' }))).toEqual([])
+    expect(codes(form({ rungCount: '10', spacingDays: '366' }))).toContain('spacing_too_long')
+  })
+
+  it('does not blame the spacing field when only the count is invalid', () => {
+    const c = codes(form({ rungCount: '15', spacingDays: '300' }))
+    expect(c).toContain('count_invalid')
+    expect(c).not.toContain('spacing_too_long')
+  })
+
+  it('rejects empty or zero capital and out-of-range counts', () => {
+    expect(codes(form({ capital: '' }))).toContain('capital_invalid')
+    expect(codes(form({ capital: '0' }))).toContain('capital_invalid')
+    expect(codes(form({ rungCount: '0' }))).toContain('count_invalid')
+    expect(codes(form({ rungCount: '13' }))).toContain('count_invalid')
+    expect(codes(form({ rungCount: '2,5' }))).toContain('count_invalid')
+  })
+
+  it('rejects invalid start dates', () => {
+    expect(codes(form({ startDate: '2026-02-30' }))).toContain('start_date_invalid')
+  })
+
+  it('never hardcodes a fiscal ceiling in M1', () => {
+    const { input } = buildScenario(form({}))
+    expect(input.fiscal.insuranceCeiling).toBe(0)
+  })
+})
+
+describe('fieldForPath', () => {
+  it('maps engine paths back to form fields', () => {
+    expect(fieldForPath('rungs[2].principal')).toBe('capital')
+    expect(fieldForPath('rungs[0].days')).toBe('spacingDays')
+    expect(fieldForPath('rungs[1].ea')).toBe('ea')
+    expect(fieldForPath('fiscal.retencionRate')).toBe('retencion')
+    expect(fieldForPath('startDate')).toBe('startDate')
+    expect(fieldForPath('unknown.path')).toBeNull()
+  })
+})
+
+describe('initialForm', () => {
+  it('prefills the labeled example scenario with today as start date', () => {
+    const f = initialForm()
+    expect(f.capital).toBe('50.000.000')
+    expect(f.retencion).toBe('4')
+    expect(f.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})

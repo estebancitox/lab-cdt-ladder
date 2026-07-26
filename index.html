@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>(()=>{try{const t=localStorage.getItem("theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}})()</script>
+    <title>lab / cdt-ladder — escalera de CDT</title>
+    <meta
+      name="description"
+      content="Calculadora visual de escalera de CDT: escalona vencimientos y proyecta intereses netos de retención. Herramienta de modelado, no asesoría financiera."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3F5F6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14171B" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="%BASE_URL%fonts/plexmono-400.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="%BASE_URL%fonts/plexmono-600.woff2" />
+    <style>
+      @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url("%BASE_URL%fonts/plexmono-400.woff2") format("woff2")}
+      @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:600;font-display:swap;src:url("%BASE_URL%fonts/plexmono-600.woff2") format("woff2")}
+    </style>
+    <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
