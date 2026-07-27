@@ -6,13 +6,15 @@ interface Props {
   /** id → name; the Entidad column renders only when more than one entity exists. */
   entityNames: Record<string, string>
   showEntity: boolean
+  /** With a projection above it, say these figures cover the initial terms. */
+  projected: boolean
 }
 
-export function ScheduleTable({ result, entityNames, showEntity }: Props) {
+export function ScheduleTable({ result, entityNames, showEntity, projected }: Props) {
   return (
     <div className="table-scroll">
       <table className="schedule">
-        <caption>Calendario de vencimientos</caption>
+        <caption>Calendario de vencimientos{projected ? ' (plazos iniciales)' : ''}</caption>
         <thead>
           <tr>
             <th scope="col">

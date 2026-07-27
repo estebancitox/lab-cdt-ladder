@@ -270,12 +270,17 @@ export default function App() {
                   interestLabel={interestLabel}
                 />
               </div>
-              <ExposureTable exposures={result.exposures} interestLabel={interestLabel} />
+              <ExposureTable
+                exposures={result.exposures}
+                interestLabel={interestLabel}
+                projected={Boolean(result.projection)}
+              />
               {result.projection && <ProjectionTable projection={result.projection} />}
               <ScheduleTable
                 result={result}
                 entityNames={entityNames}
                 showEntity={form.entities.length > 1}
+                projected={Boolean(result.projection)}
               />
             </>
           ) : (

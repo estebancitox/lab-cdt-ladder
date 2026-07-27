@@ -153,6 +153,24 @@ describe('computeScenario with rollover', () => {
     expect(e.excess).toBe(1_836_928)
   })
 
+  it('exposure follows the chain peak, not the final cycle', () => {
+    // Retención is withheld at every maturity, so a short stub after a long
+    // cycle ends BELOW the previous peak. On the last-cycle basis this same
+    // ladder reports 58.875.169 and calls a 59.000.000 ceiling compliant,
+    // while the balance really reached 59.074.400 on 2028-07-16.
+    const result = computeScenario(
+      scenario([rung({ principal: 49_000_000, days: 360, ea: 0.1 })], {
+        mode: 'horizon',
+        horizonDate: addDays(START, 721),
+      }, { retencionRate: 0.04, insuranceCeiling: 59_000_000 }),
+    )
+    expect(result.projection!.perRung[0].cycles.map((c) => c.days)).toEqual([360, 1])
+    const e = result.exposures[0]
+    expect(e.exposure).toBe(59_074_400)
+    expect(e.exposure).not.toBe(58_875_169)
+    expect(e.exceeded).toBe(true)
+  })
+
   it('projection summary totals reconcile with per-rung values', () => {
     const rungs = [1, 2].map((i) => rung({ id: `r${i}`, days: 90 * i }))
     const result = computeScenario(scenario(rungs, { mode: 'cycles', cycles: 2 }))

@@ -105,8 +105,8 @@ export interface EntityExposure {
   principal: number
   /**
    * Without rollover: gross (pre-tax) interest at maturity. With rollover:
-   * total projected interest (reinvested nets + final-cycle gross) — the
-   * peak value the insurance would have to cover at the end of the chain.
+   * the interest embedded in the chain's highest balance at any maturity —
+   * the most the insurance would ever have had to cover.
    */
   interest: number
   /** principal + interest; net-of-retención would understate exposure. */

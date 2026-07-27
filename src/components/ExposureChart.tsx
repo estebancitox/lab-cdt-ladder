@@ -135,14 +135,18 @@ export function ExposureChart({ exposures, ceiling, interestLabel }: Props) {
 export function ExposureTable({
   exposures,
   interestLabel,
+  projected,
 }: {
   exposures: EntityExposure[]
   interestLabel: string
+  projected: boolean
 }) {
   return (
     <div className="table-scroll">
       <table className="schedule">
-        <caption>Exposición por entidad (al vencimiento)</caption>
+        <caption>
+          Exposición por entidad ({projected ? 'saldo máximo proyectado' : 'al vencimiento'})
+        </caption>
         <thead>
           <tr>
             <th scope="col">Entidad</th>

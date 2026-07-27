@@ -66,10 +66,11 @@ The optional projection renews each rung at maturity — capital plus net
 interest reinvested at the same E.A. — for N renewals or until a horizon
 date, pricing a truncated final stub when the horizon lands mid-cycle. Real
 renewals reprice; the UI says so. With rollover on, the deposit-insurance
-check uses an upper bound on projected per-entity exposure — each chain's
-end-of-run value, summed per entity even though chains end on different dates
-— because compounding can cross the ceiling in later cycles even when the
-first term stays under it. It errs toward warning early, never late.
+check uses each chain's *highest* balance — not its last, since withholding
+at every maturity means a short final stub can end below an earlier peak —
+summed per entity even though chains peak on different dates. Compounding can
+cross the ceiling in later cycles even when the first term stays under it, and
+the sum is an upper bound: it errs toward warning early, never late.
 
 ## Tests gate the deploy
 
