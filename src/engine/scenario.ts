@@ -1,11 +1,14 @@
 import { addDays } from './dates'
 import { entityExposures } from './exposure'
+import type { ExposureItem } from './exposure'
 import { periodRate } from './rates'
+import { projectRung } from './rollover'
 import { roundCOP } from './money'
 import type {
   DayCountBase,
   FiscalParams,
   ISODate,
+  ProjectionSummary,
   RungInput,
   RungResult,
   ScenarioInput,
@@ -71,11 +74,45 @@ export function computeScenario(input: ScenarioInput): ScenarioResult {
     }),
     { principal: 0, grossInterest: 0, retencion: 0, netInterest: 0 },
   )
+  let projection: ProjectionSummary | undefined
+  let exposureItems: ExposureItem[]
+  if (input.rollover) {
+    const perRung = rungs.map((r) =>
+      projectRung(r, input.rollover!, input.fiscal, input.dayCountBase),
+    )
+    projection = {
+      perRung,
+      totalFinalValue: perRung.reduce((a, p) => a + p.finalValue, 0),
+      totalCumulativeNet: perRung.reduce((a, p) => a + p.cumulativeNet, 0),
+      finalMaturity: perRung.reduce(
+        (max, p) => (p.finalMaturity > max ? p.finalMaturity : max),
+        perRung[0]?.finalMaturity ?? input.startDate,
+      ),
+    }
+    // Exposure basis under rollover (pinned): the peak value at the end of
+    // each rung's chain — final-cycle principal + final-cycle gross, i.e.
+    // original principal + reinvested nets + last gross. Compounding can
+    // cross the ceiling in later cycles even when cycle 1 stays under.
+    exposureItems = perRung.map((p) => {
+      const last = p.cycles[p.cycles.length - 1]
+      const rung = rungs.find((r) => r.id === p.rungId)!
+      const peak = last ? last.principal + last.grossInterest : rung.principal + rung.grossInterest
+      return { entityId: p.entityId, principal: p.initialPrincipal, interest: peak - p.initialPrincipal }
+    })
+  } else {
+    exposureItems = rungs.map((r) => ({
+      entityId: r.entityId,
+      principal: r.principal,
+      interest: r.grossInterest,
+    }))
+  }
+
   return {
     rungs,
     totals,
     blendedEA: blendedEA(input.rungs),
     nextMaturity: rungs.length > 0 ? rungs[0].maturityDate : null,
-    exposures: entityExposures(input.entities, rungs, input.fiscal.insuranceCeiling),
+    exposures: entityExposures(input.entities, exposureItems, input.fiscal.insuranceCeiling),
+    projection,
   }
 }

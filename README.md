@@ -51,6 +51,26 @@ deposit-insurance ceiling becomes an editable field with the multi-entity
 milestone (M2). A visible disclaimer says all of this in the UI. It is a
 modeling tool, not financial advice.
 
+## Scenarios travel as URLs
+
+"Compartir" encodes the whole scenario (ladder, entities, allocation, fiscal
+parameters, rollover) into a versioned, strictly-validated URL parameter and
+copies the link; opening it reproduces the scenario exactly. The last
+scenario also persists in localStorage — shared URL wins over saved state,
+saved state over defaults. No backend, no cookies, no analytics: the URL and
+your browser's storage are the only two places a scenario lives.
+
+## Rollover is a model, not a promise
+
+The optional projection renews each rung at maturity — capital plus net
+interest reinvested at the same E.A. — for N renewals or until a horizon
+date, pricing a truncated final stub when the horizon lands mid-cycle. Real
+renewals reprice; the UI says so. With rollover on, the deposit-insurance
+check uses an upper bound on projected per-entity exposure — each chain's
+end-of-run value, summed per entity even though chains end on different dates
+— because compounding can cross the ceiling in later cycles even when the
+first term stays under it. It errs toward warning early, never late.
+
 ## Tests gate the deploy
 
 CI runs install → test → build → deploy with the official
@@ -69,4 +89,9 @@ No badge — the pipeline is the statement.
 | `Base de liquidación` | Exponent base for the rate conversion: 360 comercial (the CDT-certificate convention, default) or 365 |
 | `Fecha de inicio` | Purchase date; maturities and the today line follow it |
 | `Retención en la fuente` | Withholding on interest, editable — check the current tariff |
-| `claro / oscuro` | Theme toggle; the instrument plate stays dark in both |
+| `Entidades` / `Asignación` | Free-text institutions and per-rung allocation; the insurance ceiling is checked per entity |
+| `Tope del seguro de depósitos` | Editable coverage ceiling per depositor per institution — check the current figure |
+| `Renovación` | Off, N renewals, or until a horizon date; reinvests capital + net interest at the same rate |
+| `Compartir` | Copies a URL that reproduces the scenario exactly |
+| `Restablecer` | Back to defaults; clears the saved scenario |
+| `claro / oscuro` | Theme toggle; the instrument plates stay dark in both |

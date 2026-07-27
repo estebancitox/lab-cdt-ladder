@@ -338,6 +338,19 @@
     fill: var(--plate);
     font-weight: 600;
   }
+  .ladder .bar-renewal {
+    fill: color-mix(in srgb, var(--plate-ink) 85%, var(--plate));
+    stroke: var(--plate);
+    stroke-width: 1;
+  }
+  /* The dashed edge is the only in-chart mark for "partial cycle", so it uses
+     the plate stroke (10.83:1 against the renewal fill); plate-muted measured
+     1.87:1 there, and matched the initial bar's fill exactly. */
+  .ladder .bar-stub {
+    stroke: var(--plate);
+    stroke-width: 2;
+    stroke-dasharray: 5 3;
+  }
   .ladder .bar-date {
     fill: var(--plate-ink);
   }
@@ -554,8 +567,16 @@
     margin-right: 0.35rem;
     vertical-align: -1px;
   }
-  .sw-principal {
+  .sw-principal,
+  .sw-initial {
     background: var(--plate-muted);
+  }
+  .sw-renewal {
+    background: color-mix(in srgb, var(--plate-ink) 85%, var(--plate));
+  }
+  .sw-stub {
+    background: color-mix(in srgb, var(--plate-ink) 85%, var(--plate));
+    border: 2px dashed var(--plate);
   }
   .sw-interest {
     background: color-mix(in srgb, var(--plate-ink) 85%, var(--plate));
@@ -570,6 +591,49 @@
   }
   .results .table-scroll:first-of-type {
     margin-top: 0;
+  }
+
+  .results-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .results-head .section-label {
+    margin-bottom: 0;
+  }
+  .actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  /* The one primary action — the only place accent paints a surface. */
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ground);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    padding: 0.45rem 0.9rem;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    opacity: 0.92;
+  }
+  .btn-primary:focus-visible {
+    outline-color: var(--ink);
+  }
+
+  .notice {
+    color: var(--muted);
+    font-size: 0.8125rem;
+    margin-bottom: 1rem;
+    max-width: 62ch;
   }
 
   .empty-state {

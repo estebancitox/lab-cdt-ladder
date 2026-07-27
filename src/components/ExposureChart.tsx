@@ -5,6 +5,8 @@ import { useContainerWidth } from '../ui/useContainerWidth'
 interface Props {
   exposures: EntityExposure[]
   ceiling: number
+  /** 'interés bruto' without rollover, 'interés proyectado' with it. */
+  interestLabel: string
 }
 
 // Approximate glyph advance of IBM Plex Mono at 11px.
@@ -18,7 +20,7 @@ const ROW_GAP = 14
 const ROW_H = ROW_LABEL + BAR_H + ROW_GAP
 const M_BOTTOM = 6
 
-export function ExposureChart({ exposures, ceiling }: Props) {
+export function ExposureChart({ exposures, ceiling, interestLabel }: Props) {
   const [ref, measured] = useContainerWidth<HTMLDivElement>()
   const width = Math.max(measured, 300)
   const height = M_TOP + exposures.length * ROW_H + M_BOTTOM
@@ -120,7 +122,7 @@ export function ExposureChart({ exposures, ceiling }: Props) {
           <span className="sw sw-principal" aria-hidden="true" /> capital
         </span>
         <span>
-          <span className="sw sw-interest" aria-hidden="true" /> interés bruto
+          <span className="sw sw-interest" aria-hidden="true" /> {interestLabel}
         </span>
         <span>
           <span className="sw sw-excess" aria-hidden="true" /> supera el tope
@@ -130,7 +132,13 @@ export function ExposureChart({ exposures, ceiling }: Props) {
   )
 }
 
-export function ExposureTable({ exposures }: { exposures: EntityExposure[] }) {
+export function ExposureTable({
+  exposures,
+  interestLabel,
+}: {
+  exposures: EntityExposure[]
+  interestLabel: string
+}) {
   return (
     <div className="table-scroll">
       <table className="schedule">
@@ -142,7 +150,7 @@ export function ExposureTable({ exposures }: { exposures: EntityExposure[] }) {
               Capital
             </th>
             <th scope="col" className="num">
-              Interés bruto
+              {interestLabel.charAt(0).toUpperCase() + interestLabel.slice(1)}
             </th>
             <th scope="col" className="num">
               Exposición
@@ -155,7 +163,7 @@ export function ExposureTable({ exposures }: { exposures: EntityExposure[] }) {
             <tr key={e.entityId}>
               <th scope="row">{e.entityName}</th>
               <td className="num">{formatCOP(e.principal)}</td>
-              <td className="num">{formatCOP(e.grossInterest)}</td>
+              <td className="num">{formatCOP(e.interest)}</td>
               <td className="num">{formatCOP(e.exposure)}</td>
               <td>{e.exceeded ? `supera el tope en ${formatCOP(e.excess)}` : 'dentro del tope'}</td>
             </tr>

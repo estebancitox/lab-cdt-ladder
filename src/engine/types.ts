@@ -32,12 +32,52 @@ export interface RungInput {
   entityId: string
 }
 
+/**
+ * Modes are mutually exclusive by construction — no precedence ambiguity.
+ * `cycles` counts renewals after the initial term (≥ 1); `horizonDate` renews
+ * until the horizon, pricing a truncated stub if it lands mid-cycle.
+ */
+export type RolloverConfig =
+  | { mode: 'cycles'; cycles: number }
+  | { mode: 'horizon'; horizonDate: ISODate }
+
 export interface ScenarioInput {
   startDate: ISODate
   rungs: RungInput[]
   entities: Entity[]
   fiscal: FiscalParams
   dayCountBase: DayCountBase
+  rollover?: RolloverConfig
+}
+
+export interface RolloverCycle {
+  /** 1-based renewal index (the initial term is not a cycle). */
+  index: number
+  startDate: ISODate
+  endDate: ISODate
+  days: number
+  /** Reinvested at cycle start: previous principal + rounded net (cash event). */
+  principal: number
+  periodRate: number
+  grossInterest: number
+  retencion: number
+  netInterest: number
+  endValue: number
+  isStub: boolean
+}
+
+export interface RungProjection {
+  rungId: string
+  entityId: string
+  /** Renewals only; empty when the horizon precedes the first renewal. */
+  cycles: RolloverCycle[]
+  /** Original invested principal. */
+  initialPrincipal: number
+  finalValue: number
+  finalMaturity: ISODate
+  /** Initial net + every renewal's net. */
+  cumulativeNet: number
+  hasStub: boolean
 }
 
 export interface RungResult extends RungInput {
@@ -61,19 +101,30 @@ export interface ScenarioTotals {
 export interface EntityExposure {
   entityId: string
   entityName: string
-  /** Sum of rounded per-rung values for this entity. */
+  /** Sum of original invested principal for this entity. */
   principal: number
-  grossInterest: number
   /**
-   * principal + gross (pre-tax) interest: deposit insurance covers capital
-   * plus accrued interest, so net-of-retención would understate exposure.
+   * Without rollover: gross (pre-tax) interest at maturity. With rollover:
+   * total projected interest (reinvested nets + final-cycle gross) — the
+   * peak value the insurance would have to cover at the end of the chain.
    */
+  interest: number
+  /** principal + interest; net-of-retención would understate exposure. */
   exposure: number
   ceiling: number
   /** Strictly above the ceiling; exactly-at-ceiling is compliant. */
   exceeded: boolean
   /** max(0, exposure − ceiling). */
   excess: number
+}
+
+export interface ProjectionSummary {
+  /** One entry per rung, same order as `rungs`. */
+  perRung: RungProjection[]
+  totalFinalValue: number
+  totalCumulativeNet: number
+  /** Latest final maturity across rungs. */
+  finalMaturity: ISODate
 }
 
 export interface ScenarioResult {
@@ -85,6 +136,8 @@ export interface ScenarioResult {
   nextMaturity: ISODate | null
   /** One entry per entity that holds at least one rung, in input entity order. */
   exposures: EntityExposure[]
+  /** Present only when the input requests rollover. */
+  projection?: ProjectionSummary
 }
 
 export interface ValidationIssue {

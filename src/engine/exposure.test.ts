@@ -33,7 +33,7 @@ describe('entityExposures — per-entity aggregation vs ceiling', () => {
     const e = result.exposures[0]
     expect(e.entityId).toBe('e1')
     expect(e.principal).toBe(60_000_000)
-    expect(e.exposure).toBe(60_000_000 + e.grossInterest)
+    expect(e.exposure).toBe(60_000_000 + e.interest)
     expect(e.exceeded).toBe(true)
     expect(e.excess).toBe(e.exposure - 50_000_000)
   })

@@ -3,13 +3,15 @@ import type { EntityExposure } from '../engine'
 
 interface Props {
   exposures: EntityExposure[]
+  /** 'interés bruto' without rollover, 'interés proyectado' with it. */
+  interestLabel: string
 }
 
 /**
  * The one place signal orange is allowed to appear on the page ground:
  * ceiling-exceeded warnings are the warnings-that-matter.
  */
-export function Warnings({ exposures }: Props) {
+export function Warnings({ exposures, interestLabel }: Props) {
   const exceeded = exposures.filter((e) => e.exceeded)
   if (exceeded.length === 0) return null
   return (
@@ -18,8 +20,8 @@ export function Warnings({ exposures }: Props) {
       <ul>
         {exceeded.map((e) => (
           <li key={e.entityId}>
-            <strong>{e.entityName}</strong>: la exposición de {formatCOP(e.exposure)} (capital más
-            interés bruto) supera el tope de {formatCOP(e.ceiling)} en {formatCOP(e.excess)}. El
+            <strong>{e.entityName}</strong>: la exposición de {formatCOP(e.exposure)} (capital más{' '}
+            {interestLabel}) supera el tope de {formatCOP(e.ceiling)} en {formatCOP(e.excess)}. El
             excedente no está cubierto por el seguro de depósitos.
           </li>
         ))}

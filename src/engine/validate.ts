@@ -79,6 +79,38 @@ export function validateScenario(input: ScenarioInput): ValidationIssue[] {
     }
   })
 
+  if (input.rollover) {
+    const ro = input.rollover
+    if (ro.mode === 'cycles') {
+      if (!Number.isInteger(ro.cycles) || ro.cycles < 1 || ro.cycles > 36) {
+        issues.push({
+          code: 'rollover_cycles_invalid',
+          path: 'rollover.cycles',
+          message: 'Entre 1 y 36 renovaciones.',
+        })
+      }
+    } else {
+      let horizonOk = true
+      try {
+        parseISODate(ro.horizonDate)
+      } catch {
+        horizonOk = false
+        issues.push({
+          code: 'rollover_horizon_invalid',
+          path: 'rollover.horizonDate',
+          message: 'La fecha del horizonte no es válida.',
+        })
+      }
+      if (horizonOk && ro.horizonDate <= input.startDate) {
+        issues.push({
+          code: 'rollover_horizon_before_start',
+          path: 'rollover.horizonDate',
+          message: 'El horizonte debe ser posterior a la fecha de inicio.',
+        })
+      }
+    }
+  }
+
   if (input.dayCountBase !== 360 && input.dayCountBase !== 365) {
     issues.push({
       code: 'day_count_base_invalid',

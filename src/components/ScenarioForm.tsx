@@ -90,6 +90,9 @@ function EntityList({
                   else inputRefs.current.delete(e.id)
                 }}
                 value={e.name}
+                // Matches MAX_ENTITY_NAME: a name the serializer would have to
+                // truncate could no longer be loaded back from a link.
+                maxLength={60}
                 autoComplete="off"
                 onChange={(ev) => onEntityRename(e.id, ev.target.value)}
                 aria-invalid={error ? true : undefined}
@@ -297,6 +300,60 @@ export function ScenarioForm({
       />
 
       <AllocationList form={form} onAllocate={onAllocate} />
+
+      <fieldset>
+        <legend>Renovación (proyección)</legend>
+
+        <Field
+          id="rolloverMode"
+          label="Renovar al vencimiento"
+          hint="Reinvierte capital más interés neto a la misma tasa. Las renovaciones reales se pactan a la tasa vigente."
+        >
+          {(describedBy) => (
+            <select
+              id="rolloverMode"
+              value={form.rolloverMode}
+              onChange={(e) => onChange('rolloverMode', e.target.value)}
+              aria-describedby={describedBy}
+            >
+              <option value="off">Sin renovación</option>
+              <option value="cycles">Número de renovaciones</option>
+              <option value="horizon">Hasta una fecha</option>
+            </select>
+          )}
+        </Field>
+
+        {form.rolloverMode === 'cycles' && (
+          <Field id="rolloverCycles" label="Renovaciones" error={errors.rolloverCycles}>
+            {(describedBy, invalid) => (
+              <input
+                id="rolloverCycles"
+                inputMode="numeric"
+                autoComplete="off"
+                value={form.rolloverCycles}
+                onChange={(e) => onChange('rolloverCycles', e.target.value)}
+                aria-describedby={describedBy}
+                aria-invalid={invalid || undefined}
+              />
+            )}
+          </Field>
+        )}
+
+        {form.rolloverMode === 'horizon' && (
+          <Field id="rolloverHorizon" label="Horizonte" error={errors.rolloverHorizon}>
+            {(describedBy, invalid) => (
+              <input
+                id="rolloverHorizon"
+                type="date"
+                value={form.rolloverHorizon}
+                onChange={(e) => onChange('rolloverHorizon', e.target.value)}
+                aria-describedby={describedBy}
+                aria-invalid={invalid || undefined}
+              />
+            )}
+          </Field>
+        )}
+      </fieldset>
 
       <fieldset>
         <legend>Parámetros fiscales</legend>

@@ -21,6 +21,9 @@ function form(over: Partial<FormState>): FormState {
     entities: [{ id: 'e1', name: 'Entidad A' }],
     allocation: [],
     nextEntitySeq: 2,
+    rolloverMode: 'off',
+    rolloverCycles: '4',
+    rolloverHorizon: '2028-07-26',
     ...over,
   }
 }
@@ -108,6 +111,47 @@ describe('buildScenario — ladder shape', () => {
     expect(buildScenario(form({})).input.dayCountBase).toBe(360)
     expect(buildScenario(form({ dayCountBase: '365' })).input.dayCountBase).toBe(365)
     expect(codes(form({ dayCountBase: '364' }))).toContain('base_invalid')
+  })
+})
+
+describe('buildScenario — rollover config', () => {
+  it("mode 'off' produces no config", () => {
+    expect(buildScenario(form({})).input.rollover).toBeUndefined()
+  })
+
+  it('cycles mode parses and bounds 1..36', () => {
+    expect(buildScenario(form({ rolloverMode: 'cycles', rolloverCycles: '6' })).input.rollover)
+      .toEqual({ mode: 'cycles', cycles: 6 })
+    for (const bad of ['0', '37', '2,5', '']) {
+      expect(codes(form({ rolloverMode: 'cycles', rolloverCycles: bad }))).toContain(
+        'rollover_cycles_invalid',
+      )
+    }
+  })
+
+  it('cycles mode enforces the same 20-year projection ceiling', () => {
+    // 4 rungs × 90 d → longest term 360 d; 36 renewals ≈ 36 years.
+    expect(codes(form({ rolloverMode: 'cycles', rolloverCycles: '36' }))).toContain(
+      'rollover_cycles_too_far',
+    )
+    expect(codes(form({ rolloverMode: 'cycles', rolloverCycles: '19' }))).toEqual([])
+  })
+
+  it('horizon mode validates order, 20-year cap, and the cycle-count guard', () => {
+    expect(
+      buildScenario(form({ rolloverMode: 'horizon', rolloverHorizon: '2028-07-26' })).input
+        .rollover,
+    ).toEqual({ mode: 'horizon', horizonDate: '2028-07-26' })
+    expect(codes(form({ rolloverMode: 'horizon', rolloverHorizon: '2026-07-26' }))).toContain(
+      'rollover_horizon_before_start',
+    )
+    expect(codes(form({ rolloverMode: 'horizon', rolloverHorizon: '2047-01-01' }))).toContain(
+      'rollover_horizon_too_far',
+    )
+    // spacing 5 over ~2 years → 146 renewals for the shortest rung: too many.
+    expect(
+      codes(form({ rolloverMode: 'horizon', rolloverHorizon: '2028-07-26', spacingDays: '5' })),
+    ).toContain('rollover_too_many_cycles')
   })
 })
 

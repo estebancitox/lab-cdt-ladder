@@ -1,5 +1,11 @@
-import { parseISODate, splitCapital, toISODate, validateScenario } from '../engine'
-import type { DayCountBase, ISODate, ScenarioInput, ValidationIssue } from '../engine'
+import { addDays, dayNumber, parseISODate, splitCapital, toISODate, validateScenario } from '../engine'
+import type {
+  DayCountBase,
+  ISODate,
+  RolloverConfig,
+  ScenarioInput,
+  ValidationIssue,
+} from '../engine'
 
 export interface EntityDraft {
   id: string
@@ -14,6 +20,8 @@ export function entityDisplayName(name: string, index: number): string {
   return name.trim() || `Entidad ${index + 1}`
 }
 
+export type RolloverMode = 'off' | 'cycles' | 'horizon'
+
 export interface FormState {
   capital: string
   rungCount: string
@@ -27,6 +35,9 @@ export interface FormState {
   /** entityId per rung index; missing or stale entries fall back to the first entity. */
   allocation: string[]
   nextEntitySeq: number
+  rolloverMode: RolloverMode
+  rolloverCycles: string
+  rolloverHorizon: string
 }
 
 /** The user's local calendar day — UI concern only; the engine never asks the clock. */
@@ -50,6 +61,9 @@ export function initialForm(): FormState {
     entities: [{ id: 'e1', name: 'Entidad A' }],
     allocation: [],
     nextEntitySeq: 2,
+    rolloverMode: 'off',
+    rolloverCycles: '4',
+    rolloverHorizon: addDays(todayISO(), 730),
   }
 }
 
@@ -178,6 +192,71 @@ export function buildScenario(form: FormState): ParsedForm {
     startDate = todayISO()
   }
 
+  let rollover: RolloverConfig | undefined
+  if (form.rolloverMode === 'cycles') {
+    const cycles = parseIntStrict(form.rolloverCycles)
+    if (cycles === null || cycles < 1 || cycles > 36) {
+      issues.push({
+        code: 'rollover_cycles_invalid',
+        path: 'form.rolloverCycles',
+        message: 'Entre 1 y 36 renovaciones.',
+      })
+    } else {
+      // Same 20-year ceiling the horizon mode enforces: 36 renewals of a long
+      // rung would otherwise project centuries and squash the chart.
+      const longestTerm = spacing !== null && count !== null ? spacing * count : null
+      if (longestTerm !== null && longestTerm * (1 + cycles) > 7300) {
+        issues.push({
+          code: 'rollover_cycles_too_far',
+          path: 'form.rolloverCycles',
+          message: 'La proyección no puede pasar de 20 años: reduce las renovaciones o el plazo.',
+        })
+      } else {
+        rollover = { mode: 'cycles', cycles }
+      }
+    }
+  } else if (form.rolloverMode === 'horizon') {
+    let horizonOk = false
+    try {
+      parseISODate(form.rolloverHorizon)
+      horizonOk = true
+    } catch {
+      issues.push({
+        code: 'rollover_horizon_invalid',
+        path: 'form.rolloverHorizon',
+        message: 'La fecha del horizonte no es válida.',
+      })
+    }
+    if (horizonOk) {
+      if (form.rolloverHorizon <= startDate) {
+        issues.push({
+          code: 'rollover_horizon_before_start',
+          path: 'form.rolloverHorizon',
+          message: 'El horizonte debe ser posterior a la fecha de inicio.',
+        })
+      } else if (form.rolloverHorizon > addDays(startDate, 7300)) {
+        issues.push({
+          code: 'rollover_horizon_too_far',
+          path: 'form.rolloverHorizon',
+          message: 'La proyección no puede pasar de 20 años.',
+        })
+      } else if (
+        spacing !== null &&
+        spacing >= 1 &&
+        (dayNumber(form.rolloverHorizon) - dayNumber(startDate)) / spacing > 120
+      ) {
+        // The shortest rung renews every `spacing` days; cap the cycle count.
+        issues.push({
+          code: 'rollover_too_many_cycles',
+          path: 'form.rolloverHorizon',
+          message: 'Demasiadas renovaciones para ese horizonte: acércalo o alarga el espaciado.',
+        })
+      } else {
+        rollover = { mode: 'horizon', horizonDate: form.rolloverHorizon }
+      }
+    }
+  }
+
   const rawEntities =
     form.entities.length > 0 ? form.entities : [{ id: 'e1', name: 'Entidad A' }]
   const entities = rawEntities.map((e, i) => ({ id: e.id, name: entityDisplayName(e.name, i) }))
@@ -190,6 +269,7 @@ export function buildScenario(form: FormState): ParsedForm {
         entities,
         fiscal: { retencionRate: 0, insuranceCeiling: 0 },
         dayCountBase: dayCountBase ?? 360,
+        rollover: undefined,
       },
       issues,
     }
@@ -214,6 +294,7 @@ export function buildScenario(form: FormState): ParsedForm {
     entities,
     fiscal: { retencionRate: retencionPct! / 100, insuranceCeiling: ceiling! },
     dayCountBase: dayCountBase!,
+    rollover,
   }
   return { input, issues: validateScenario(input) }
 }
@@ -228,6 +309,8 @@ export function fieldForPath(path: string): keyof FormState | null {
   if (path === 'form.retencion' || path === 'fiscal.retencionRate') return 'retencion'
   if (path === 'form.ceiling' || path === 'fiscal.insuranceCeiling') return 'ceiling'
   if (path === 'form.startDate' || path === 'startDate') return 'startDate'
+  if (path === 'form.rolloverCycles' || path === 'rollover.cycles') return 'rolloverCycles'
+  if (path === 'form.rolloverHorizon' || path === 'rollover.horizonDate') return 'rolloverHorizon'
   return null
 }
 

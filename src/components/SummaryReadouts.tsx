@@ -7,6 +7,7 @@ interface Props {
 }
 
 export function SummaryReadouts({ result, today }: Props) {
+  const projection = result.projection
   const next = result.nextMaturity
   const daysToNext = next ? dayNumber(next) - dayNumber(today) : null
   return (
@@ -19,8 +20,21 @@ export function SummaryReadouts({ result, today }: Props) {
       <div className="dataline">
         <dt>Interés neto total</dt>
         <dd className="value">{formatCOP(result.totals.netInterest)}</dd>
-        <dd className="hint">después de retención en la fuente</dd>
+        {/* With a projection alongside, say which basis this figure uses —
+            the totals cover the initial terms only, never the renewals. */}
+        <dd className="hint">
+          {projection
+            ? 'solo plazos iniciales, después de retención'
+            : 'después de retención en la fuente'}
+        </dd>
       </div>
+      {projection && (
+        <div className="dataline">
+          <dt>Valor proyectado</dt>
+          <dd className="value">{formatCOP(projection.totalFinalValue)}</dd>
+          <dd className="hint">al {formatDateShort(projection.finalMaturity)}</dd>
+        </div>
+      )}
       <div className="dataline">
         <dt>Próximo vencimiento</dt>
         <dd className="value">{next ? formatDateShort(next) : '—'}</dd>
