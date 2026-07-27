@@ -61,7 +61,9 @@
     --muted: #8b939c;
     --line: #2a2f35;
     --accent: #ff8a50;
-    --plate-edge: #2a2f35;
+    /* transparent, not a line color: in dark the plate fuses with the page
+       (lab-instrument convention) — the seat exists only on light ground */
+    --plate-edge: transparent;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) {
@@ -71,7 +73,7 @@
       --muted: #8b939c;
       --line: #2a2f35;
       --accent: #ff8a50;
-      --plate-edge: #2a2f35;
+      --plate-edge: transparent;
     }
   }
 
@@ -250,7 +252,8 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
     gap: 0.75rem;
-    margin-bottom: 1.25rem;
+    /* same vertical rhythm as the plates and tables below */
+    margin-bottom: 1.75rem;
   }
   .dataline {
     position: relative;
@@ -296,11 +299,13 @@
     margin-top: 0.15rem;
   }
 
+  /* Plate finish ported from lab-instrument's light-theme refinement:
+     radius 8, hairline seat on light ground only, sibling padding clamp. */
   .plate {
     background: var(--plate);
     border: 1px solid var(--plate-edge);
-    border-radius: 2px;
-    padding: clamp(0.75rem, 2vw, 1.25rem);
+    border-radius: 8px;
+    padding: clamp(1rem, 3.5vw, 1.25rem);
     margin-bottom: 1.75rem;
   }
   .ladder-wrap {
@@ -413,7 +418,7 @@
     border-left: 3px solid var(--accent);
     border-radius: 2px;
     padding: 0.9rem 1.1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
   }
   .warnings-label {
     font-family: var(--mono);
@@ -562,6 +567,9 @@
 
   .results .table-scroll + .table-scroll {
     margin-top: 1.75rem;
+  }
+  .results .table-scroll:first-of-type {
+    margin-top: 0;
   }
 
   .empty-state {
