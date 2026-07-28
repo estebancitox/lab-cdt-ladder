@@ -220,8 +220,18 @@ describe('fieldForPath', () => {
 describe('initialForm', () => {
   it('prefills the labeled example scenario with today as start date', () => {
     const f = initialForm()
-    expect(f.capital).toBe('50.000.000')
+    expect(f.capital).toBe('40.000.000')
+    expect(f.rungCount).toBe('1')
     expect(f.retencion).toBe('4')
     expect(f.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('the pristine default stays under the default insurance ceiling', () => {
+    // Two reviewers flagged an alarm-first first paint; the default must
+    // never open on TOPE SUPERADO. 40M + gross at 10 % over 90/360 < 50M.
+    const { input, issues } = buildScenario(initialForm())
+    expect(issues).toEqual([])
+    const gross = Math.round(40_000_000 * (Math.pow(1.1, 90 / 360) - 1))
+    expect(40_000_000 + gross).toBeLessThan(input.fiscal.insuranceCeiling)
   })
 })

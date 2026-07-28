@@ -48,7 +48,10 @@ export function todayISO(): ISODate {
 
 export function initialForm(): FormState {
   return {
-    capital: '50.000.000',
+    // Under the default 50M insurance ceiling with room for interest: the
+    // pristine first paint must not open on a TOPE SUPERADO alarm about
+    // parameters the user has not chosen yet.
+    capital: '40.000.000',
     // 1, not a pre-built ladder: people hold one CDT and decide at maturity.
     // The rung-count hint explains what raising it does.
     rungCount: '1',
