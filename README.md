@@ -7,14 +7,7 @@ deployed by CI.
 
 **Live demo:** <https://estebancitox.github.io/lab-cdt-ladder/>
 
-<!-- GIF placeholder — record with:
-     1. `npm run dev`, browser at 1280×800, light theme.
-     2. Type a capital, change rung count and spacing, watch the ladder and
-        table recalculate live; toggle the theme at the end.
-     3. Capture ~12 s with Kap or QuickTime, export as demo.gif (≤ 3 MB),
-        commit at repo root and replace this comment with:
-        ![Ladder recalculating live as inputs change](demo.gif)
--->
+![CDT ladder recalculating live — entity exposure crossing the deposit-insurance ceiling triggers the warning](demo.gif)
 
 ## Why this one has a toolchain
 
@@ -22,7 +15,7 @@ The [portfolio](https://estebancitox.github.io/) and
 [lab-instrument](https://github.com/estebancitox/lab-instrument) are
 deliberately zero-build: a static page earns no toolchain. This project is the
 counterargument from the other side — an interactive calculator with financial
-math worth testing *does* earn one, so it uses the daily production stack:
+math worth testing _does_ earn one, so it uses the daily production stack:
 Vite, React 18, TypeScript, Vitest, GitHub Actions. Knowing which projects
 deserve which toolchain is the point.
 
@@ -65,7 +58,7 @@ The optional projection renews each rung at maturity — capital plus net
 interest reinvested at the same E.A. — for N renewals or until a horizon
 date, pricing a truncated final stub when the horizon lands mid-cycle. Real
 renewals reprice; the UI says so. With rollover on, the deposit-insurance
-check uses each chain's *highest* balance — not its last, since withholding
+check uses each chain's _highest_ balance — not its last, since withholding
 at every maturity means a short final stub can end below an earlier peak —
 summed per entity even though chains peak on different dates. Compounding can
 cross the ceiling in later cycles even when the first term stays under it, and
@@ -80,18 +73,18 @@ No badge — the pipeline is the statement.
 
 ## Controls
 
-| Input | Effect |
-| --- | --- |
-| `Capital total` | Total COP, split near-equally across rungs (the sum is always exact) |
-| `Número de peldaños` | How many CDTs the ladder holds (1–12) |
-| `Días entre vencimientos` | Days between one maturity and the next; rung *n* matures at *n* × spacing |
-| `Tasa E.A.` | Effective annual rate applied to every rung — user-supplied, never fetched |
-| `Base de liquidación` | Exponent base for the rate conversion: 360 comercial (the CDT-certificate convention, default) or 365 |
-| `Fecha de inicio` | Purchase date; maturities and the today line follow it |
-| `Retención en la fuente` | Withholding on interest, editable — check the current tariff |
-| `Entidades` / `Asignación` | Free-text institutions and per-rung allocation; the insurance ceiling is checked per entity |
-| `Tope del seguro de depósitos` | Editable coverage ceiling per depositor per institution — check the current figure |
-| `Renovación` | Off, N renewals, or until a horizon date; reinvests capital + net interest at the same rate |
-| `Compartir` | Copies a URL that reproduces the scenario exactly |
-| `Restablecer` | Back to defaults; clears the saved scenario |
-| `claro / oscuro` | Theme toggle; the instrument plates stay dark in both |
+| Input                          | Effect                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `Capital total`                | Total COP, split near-equally across rungs (the sum is always exact)                                  |
+| `Número de peldaños`           | How many CDTs the ladder holds (1–12)                                                                 |
+| `Días entre vencimientos`      | Days between one maturity and the next; rung _n_ matures at _n_ × spacing                             |
+| `Tasa E.A.`                    | Effective annual rate applied to every rung — user-supplied, never fetched                            |
+| `Base de liquidación`          | Exponent base for the rate conversion: 360 comercial (the CDT-certificate convention, default) or 365 |
+| `Fecha de inicio`              | Purchase date; maturities and the today line follow it                                                |
+| `Retención en la fuente`       | Withholding on interest, editable — check the current tariff                                          |
+| `Entidades` / `Asignación`     | Free-text institutions and per-rung allocation; the insurance ceiling is checked per entity           |
+| `Tope del seguro de depósitos` | Editable coverage ceiling per depositor per institution — check the current figure                    |
+| `Renovación`                   | Off, N renewals, or until a horizon date; reinvests capital + net interest at the same rate           |
+| `Compartir`                    | Copies a URL that reproduces the scenario exactly                                                     |
+| `Restablecer`                  | Back to defaults; clears the saved scenario                                                           |
+| `claro / oscuro`               | Theme toggle; the instrument plates stay dark in both                                                 |
