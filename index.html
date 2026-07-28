@@ -7,7 +7,12 @@
     <title>lab / cdt-ladder — escalera de CDT</title>
     <meta
       name="description"
-      content="Calculadora visual de escalera de CDT: escalona vencimientos y proyecta intereses netos de retención. Herramienta de modelado, no asesoría financiera."
+      content="Calculadora visual de escalera de CDT: escalona vencimientos, proyecta intereses netos de retención y renovaciones, y compara la exposición por entidad con el tope del seguro de depósitos. Herramienta de modelado, no asesoría financiera."
+    />
+    <meta property="og:title" content="lab / cdt-ladder — escalera de CDT" />
+    <meta
+      property="og:description"
+      content="Calculadora visual de escalera de CDT: vencimientos, intereses netos, renovaciones y exposición frente al seguro de depósitos. Herramienta de modelado."
     />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3F5F6" />
@@ -22,6 +27,11 @@
     <script type="module" src="/src/main.tsx"></script>
   </head>
   <body>
+    <noscript>
+      <p style="padding: 2rem; font-family: system-ui, sans-serif">
+        Esta calculadora necesita JavaScript. Actívalo para ver la escalera de CDT.
+      </p>
+    </noscript>
     <div id="root"></div>
   </body>
 </html>

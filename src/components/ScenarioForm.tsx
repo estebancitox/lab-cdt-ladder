@@ -331,7 +331,12 @@ export function ScenarioForm({
         )}
 
         {form.rolloverMode === 'horizon' && (
-          <Field id="rolloverHorizon" label="Horizonte" error={errors.rolloverHorizon}>
+          <Field
+            id="rolloverHorizon"
+            label="Horizonte"
+            hint="Si cae a mitad de un plazo, el último tramo se proyecta a prorrata de la misma tasa; un CDT real no se pacta por menos de 30 días."
+            error={errors.rolloverHorizon}
+          >
             {(describedBy, invalid) => (
               <input
                 id="rolloverHorizon"
@@ -367,12 +372,12 @@ export function ScenarioForm({
           </Field>
 
           <fieldset>
-            <legend>Parámetros fiscales</legend>
+            <legend>Liquidación, retención y seguro</legend>
 
             <Field
               id="dayCountBase"
               label="Base de liquidación"
-              hint="Aparece en tu constancia como 'Base liquidación'. 360 comercial es lo usual en CDTs."
+              hint="Aparece en tu constancia como 'Base liquidación'. Varía según la entidad: cópiala de tu constancia."
               error={errors.dayCountBase}
             >
               {(describedBy, invalid) => (
@@ -383,7 +388,7 @@ export function ScenarioForm({
                   aria-describedby={describedBy}
                   aria-invalid={invalid || undefined}
                 >
-                  <option value="360">360 comercial (usual en CDTs)</option>
+                  <option value="360">360 comercial</option>
                   <option value="365">365</option>
                 </select>
               )}

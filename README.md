@@ -46,10 +46,9 @@ CI (`TZ=America/Bogota` and `TZ=UTC`) to prove it.
 
 Fiscal figures change by decree, so the tool never hardcodes them as current
 truth and never claims live market rates. The withholding rate (retención en
-la fuente) is an editable field labeled "verifica la tarifa vigente"; the
-deposit-insurance ceiling becomes an editable field with the multi-entity
-milestone (M2). A visible disclaimer says all of this in the UI. It is a
-modeling tool, not financial advice.
+la fuente) and the deposit-insurance ceiling are both editable fields labeled
+"verifica la tarifa/cobertura vigente". A visible disclaimer says all of this
+in the UI. It is a modeling tool, not financial advice.
 
 ## Scenarios travel as URLs
 
@@ -85,7 +84,7 @@ No badge — the pipeline is the statement.
 | --- | --- |
 | `Capital total` | Total COP, split near-equally across rungs (the sum is always exact) |
 | `Número de peldaños` | How many CDTs the ladder holds (1–12) |
-| `Espaciado entre vencimientos` | Days between one maturity and the next; rung *n* matures at *n* × spacing |
+| `Días entre vencimientos` | Days between one maturity and the next; rung *n* matures at *n* × spacing |
 | `Tasa E.A.` | Effective annual rate applied to every rung — user-supplied, never fetched |
 | `Base de liquidación` | Exponent base for the rate conversion: 360 comercial (the CDT-certificate convention, default) or 365 |
 | `Fecha de inicio` | Purchase date; maturities and the today line follow it |

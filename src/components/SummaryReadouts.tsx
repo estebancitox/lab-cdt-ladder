@@ -20,15 +20,11 @@ export function SummaryReadouts({ result, today, horizonBeforeFinal }: Props) {
         <dd className="hint">ponderada por capital × días</dd>
       </div>
       <div className="dataline">
-        <dt>Interés neto total</dt>
+        {/* With a projection alongside, "total" must not attach to the smaller
+            of two totals — the label itself carries the scope. */}
+        <dt>{projection ? 'Interés neto (plazos iniciales)' : 'Interés neto total'}</dt>
         <dd className="value">{formatCOP(result.totals.netInterest)}</dd>
-        {/* With a projection alongside, say which basis this figure uses —
-            the totals cover the initial terms only, never the renewals. */}
-        <dd className="hint">
-          {projection
-            ? 'solo plazos iniciales, después de retención'
-            : 'después de retención en la fuente'}
-        </dd>
+        <dd className="hint">después de retención en la fuente</dd>
       </div>
       {projection && (
         <div className="dataline">
