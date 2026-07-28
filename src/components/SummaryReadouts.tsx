@@ -4,9 +4,11 @@ import type { ISODate, ScenarioResult } from '../engine'
 interface Props {
   result: ScenarioResult
   today: ISODate
+  /** True when the requested horizon falls before the last real maturity. */
+  horizonBeforeFinal: boolean
 }
 
-export function SummaryReadouts({ result, today }: Props) {
+export function SummaryReadouts({ result, today, horizonBeforeFinal }: Props) {
   const projection = result.projection
   const next = result.nextMaturity
   const daysToNext = next ? dayNumber(next) - dayNumber(today) : null
@@ -32,7 +34,11 @@ export function SummaryReadouts({ result, today }: Props) {
         <div className="dataline">
           <dt>Valor proyectado</dt>
           <dd className="value">{formatCOP(projection.totalFinalValue)}</dd>
-          <dd className="hint">al {formatDateShort(projection.finalMaturity)}</dd>
+          <dd className="hint">
+            {horizonBeforeFinal
+              ? `al ${formatDateShort(projection.finalMaturity)} — tu horizonte cae antes del último vencimiento`
+              : `al ${formatDateShort(projection.finalMaturity)}`}
+          </dd>
         </div>
       )}
       <div className="dataline">

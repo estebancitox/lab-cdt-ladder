@@ -1,6 +1,6 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { entityDisplayName, formatCapitalInput, MAX_ENTITIES, MAX_RUNGS } from '../ui/form'
+import { entityDisplayName, formatCapitalInput, initialForm, MAX_ENTITIES, MAX_RUNGS } from '../ui/form'
 import type { EntityDraft, FormState } from '../ui/form'
 import type { ValidationIssue } from '../engine'
 
@@ -182,6 +182,25 @@ export function ScenarioForm({
   onEntityRename,
   onAllocate,
 }: Props) {
+  // Advanced settings collapse. Open at mount when any of them differs from
+  // its default, so a shared or restored scenario never hides an active
+  // setting; forced open whenever one of them carries a validation error.
+  const [advancedOpen, setAdvancedOpen] = useState(() => {
+    const base = initialForm()
+    return (
+      form.startDate !== base.startDate ||
+      form.dayCountBase !== base.dayCountBase ||
+      form.retencion !== base.retencion ||
+      form.ceiling !== base.ceiling
+    )
+  })
+  const advancedError = Boolean(
+    errors.startDate || errors.dayCountBase || errors.retencion || errors.ceiling,
+  )
+  useEffect(() => {
+    if (advancedError) setAdvancedOpen(true)
+  }, [advancedError])
+
   return (
     <form aria-labelledby="h-params" onSubmit={(e) => e.preventDefault()}>
       <h2 className="section-label" id="h-params">
@@ -205,7 +224,12 @@ export function ScenarioForm({
           )}
         </Field>
 
-        <Field id="rungCount" label="Número de peldaños" error={errors.rungCount}>
+        <Field
+          id="rungCount"
+          label="Número de peldaños"
+          hint="Más de 1 divide el capital en peldaños que vencen escalonados: la liquidez y la oportunidad de tomar la tasa vigente llegan por partes, no todas a la vez. Reparte el riesgo de reinversión; no aumenta el rendimiento."
+          error={errors.rungCount}
+        >
           {(describedBy, invalid) => (
             <input
               id="rungCount"
@@ -221,7 +245,7 @@ export function ScenarioForm({
 
         <Field
           id="spacingDays"
-          label="Espaciado entre vencimientos (días)"
+          label="Días entre vencimientos"
           hint="Cada peldaño vence este número de días después del anterior."
           error={errors.spacingDays}
         >
@@ -251,39 +275,6 @@ export function ScenarioForm({
               autoComplete="off"
               value={form.ea}
               onChange={(e) => onChange('ea', e.target.value)}
-              aria-describedby={describedBy}
-              aria-invalid={invalid || undefined}
-            />
-          )}
-        </Field>
-
-        <Field
-          id="dayCountBase"
-          label="Base de liquidación"
-          hint="Aparece en tu constancia como 'Base liquidación'. 360 comercial es lo usual en CDTs."
-          error={errors.dayCountBase}
-        >
-          {(describedBy, invalid) => (
-            <select
-              id="dayCountBase"
-              value={form.dayCountBase}
-              onChange={(e) => onChange('dayCountBase', e.target.value)}
-              aria-describedby={describedBy}
-              aria-invalid={invalid || undefined}
-            >
-              <option value="360">360 comercial (usual en CDTs)</option>
-              <option value="365">365</option>
-            </select>
-          )}
-        </Field>
-
-        <Field id="startDate" label="Fecha de inicio" error={errors.startDate}>
-          {(describedBy, invalid) => (
-            <input
-              id="startDate"
-              type="date"
-              value={form.startDate}
-              onChange={(e) => onChange('startDate', e.target.value)}
               aria-describedby={describedBy}
               aria-invalid={invalid || undefined}
             />
@@ -355,47 +346,89 @@ export function ScenarioForm({
         )}
       </fieldset>
 
-      <fieldset>
-        <legend>Parámetros fiscales</legend>
+      <details
+        className="advanced"
+        open={advancedOpen}
+        onToggle={(e) => setAdvancedOpen((e.target as HTMLDetailsElement).open)}
+      >
+        <summary>Ajustes avanzados</summary>
+        <div className="advanced-body">
+          <Field id="startDate" label="Fecha de inicio" error={errors.startDate}>
+            {(describedBy, invalid) => (
+              <input
+                id="startDate"
+                type="date"
+                value={form.startDate}
+                onChange={(e) => onChange('startDate', e.target.value)}
+                aria-describedby={describedBy}
+                aria-invalid={invalid || undefined}
+              />
+            )}
+          </Field>
 
-        <Field
-          id="retencion"
-          label="Retención en la fuente (%)"
-          hint="Sobre los intereses. Verifica la tarifa vigente."
-          error={errors.retencion}
-        >
-          {(describedBy, invalid) => (
-            <input
+          <fieldset>
+            <legend>Parámetros fiscales</legend>
+
+            <Field
+              id="dayCountBase"
+              label="Base de liquidación"
+              hint="Aparece en tu constancia como 'Base liquidación'. 360 comercial es lo usual en CDTs."
+              error={errors.dayCountBase}
+            >
+              {(describedBy, invalid) => (
+                <select
+                  id="dayCountBase"
+                  value={form.dayCountBase}
+                  onChange={(e) => onChange('dayCountBase', e.target.value)}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid || undefined}
+                >
+                  <option value="360">360 comercial (usual en CDTs)</option>
+                  <option value="365">365</option>
+                </select>
+              )}
+            </Field>
+
+            <Field
               id="retencion"
-              inputMode="decimal"
-              autoComplete="off"
-              value={form.retencion}
-              onChange={(e) => onChange('retencion', e.target.value)}
-              aria-describedby={describedBy}
-              aria-invalid={invalid || undefined}
-            />
-          )}
-        </Field>
+              label="Retención en la fuente (%)"
+              hint="Sobre los intereses. Verifica la tarifa vigente."
+              error={errors.retencion}
+            >
+              {(describedBy, invalid) => (
+                <input
+                  id="retencion"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={form.retencion}
+                  onChange={(e) => onChange('retencion', e.target.value)}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid || undefined}
+                />
+              )}
+            </Field>
 
-        <Field
-          id="ceiling"
-          label="Tope del seguro de depósitos (COP)"
-          hint="Por depositante y por entidad (bancos: Fogafín; cooperativas: Fogacoop). Verifica la cobertura vigente."
-          error={errors.ceiling}
-        >
-          {(describedBy, invalid) => (
-            <input
+            <Field
               id="ceiling"
-              inputMode="numeric"
-              autoComplete="off"
-              value={form.ceiling}
-              onChange={(e) => onChange('ceiling', formatCapitalInput(e.target.value))}
-              aria-describedby={describedBy}
-              aria-invalid={invalid || undefined}
-            />
-          )}
-        </Field>
-      </fieldset>
+              label="Tope del seguro de depósitos (COP)"
+              hint="Por depositante y por entidad (bancos: Fogafín; cooperativas: Fogacoop). Verifica la cobertura vigente."
+              error={errors.ceiling}
+            >
+              {(describedBy, invalid) => (
+                <input
+                  id="ceiling"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={form.ceiling}
+                  onChange={(e) => onChange('ceiling', formatCapitalInput(e.target.value))}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid || undefined}
+                />
+              )}
+            </Field>
+          </fieldset>
+        </div>
+      </details>
     </form>
   )
 }

@@ -112,6 +112,11 @@ export default function App() {
   )
 
   const interestLabel = result?.projection ? 'interés proyectado' : 'interés bruto'
+  const horizonBeforeFinal = Boolean(
+    input.rollover?.mode === 'horizon' &&
+      result?.projection &&
+      result.projection.finalMaturity > input.rollover.horizonDate,
+  )
 
   const onShare = async () => {
     const url = shareURL(form)
@@ -254,7 +259,11 @@ export default function App() {
           {result ? (
             <>
               <Warnings exposures={result.exposures} interestLabel={interestLabel} />
-              <SummaryReadouts result={result} today={today} />
+              <SummaryReadouts
+                result={result}
+                today={today}
+                horizonBeforeFinal={horizonBeforeFinal}
+              />
               <div className="plate">
                 <LadderChart
                   rungs={result.rungs}

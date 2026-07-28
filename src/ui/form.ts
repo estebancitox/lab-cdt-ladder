@@ -49,7 +49,9 @@ export function todayISO(): ISODate {
 export function initialForm(): FormState {
   return {
     capital: '50.000.000',
-    rungCount: '4',
+    // 1, not a pre-built ladder: people hold one CDT and decide at maturity.
+    // The rung-count hint explains what raising it does.
+    rungCount: '1',
     spacingDays: '90',
     ea: '10',
     dayCountBase: '360',
@@ -133,7 +135,7 @@ export function buildScenario(form: FormState): ParsedForm {
     issues.push({
       code: 'spacing_invalid',
       path: 'form.spacingDays',
-      message: 'El espaciado debe ser un número entero de días, mayor que cero.',
+      message: 'Los días entre vencimientos deben ser un número entero, mayor que cero.',
     })
   } else if (count !== null && count >= 1 && count <= MAX_RUNGS && spacing * count > 3650) {
     issues.push({
@@ -249,7 +251,8 @@ export function buildScenario(form: FormState): ParsedForm {
         issues.push({
           code: 'rollover_too_many_cycles',
           path: 'form.rolloverHorizon',
-          message: 'Demasiadas renovaciones para ese horizonte: acércalo o alarga el espaciado.',
+          message:
+            'Demasiadas renovaciones para ese horizonte: acércalo o sube los días entre vencimientos.',
         })
       } else {
         rollover = { mode: 'horizon', horizonDate: form.rolloverHorizon }

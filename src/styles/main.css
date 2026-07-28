@@ -235,6 +235,21 @@
   .field input[aria-invalid='true'] {
     border-color: var(--ink);
   }
+  /* iOS Safari date inputs ignore the shared box rules: they collapse their
+     height, center the value, and size to content. Pin them to the same box
+     and left-align the WebKit value container. */
+  .field input[type='date'] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    min-height: 2.4rem;
+    text-align: left;
+  }
+  .field input[type='date']::-webkit-date-and-time-value {
+    text-align: left;
+    margin: 0;
+  }
   .field .hint,
   .field .error {
     font-size: 0.8125rem;
@@ -246,6 +261,29 @@
     color: var(--ink);
     padding-left: 0.6rem;
     border-left: 2px solid var(--ink);
+  }
+
+  /* Advanced settings: native <details>, no motion, keyboard-toggleable. */
+  details.advanced {
+    margin-bottom: 1.75rem;
+  }
+  details.advanced summary {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0.35rem 0;
+  }
+  details.advanced summary:hover {
+    color: var(--ink);
+  }
+  details.advanced summary::marker {
+    color: var(--muted);
+  }
+  details.advanced[open] summary {
+    margin-bottom: 0.9rem;
   }
 
   .readouts {
