@@ -490,12 +490,29 @@
   }
 
   /* The explanation panel sits on the page ground, like the warnings, but in
-     the muted register: the signal and accent colors stay with the ceiling. */
+     the muted register while it rests: the signal color stays with the
+     ceiling. While a request is in flight (aria-busy) it takes the warnings'
+     accent edge and a sweeping line along its top, so the wait reads as
+     activity and not as a stall. */
   .explanation {
+    position: relative;
     border: 1px solid var(--line);
     border-radius: 2px;
     padding: 0.9rem 1.1rem;
     margin-bottom: 1.75rem;
+  }
+  .explanation[aria-busy='true'] {
+    border-left: 3px solid var(--accent);
+    overflow: hidden;
+  }
+  .explanation[aria-busy='true']::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 25%;
+    height: 2px;
+    background: var(--accent);
   }
   .explanation > :last-child {
     margin-bottom: 0;
@@ -507,6 +524,15 @@
     text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 0.4rem;
+  }
+  /* The wait, in the warnings-label register. */
+  .explanation-pending {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
   }
   /* SPEC §4's two section headers, rendered as headings under the h2 above. */
   .explanation h3 {
@@ -714,11 +740,16 @@
     padding: 0.45rem 0.9rem;
     cursor: pointer;
   }
-  .btn-primary:hover {
+  .btn-primary:not([aria-disabled='true']):hover {
     opacity: 0.92;
   }
   .btn-primary:focus-visible {
     outline-color: var(--ink);
+  }
+  .btn-primary:disabled,
+  .btn-primary[aria-disabled='true'] {
+    opacity: 0.4;
+    cursor: default;
   }
 
   .notice {
@@ -756,6 +787,20 @@
   }
   .ladder .m-tick {
     transition: x 0.2s ease-out;
+  }
+  /* Indeterminate: the segment is a quarter of the panel wide, so a travel
+     of five widths takes it from fully outside the left edge to fully
+     outside the right. */
+  .explanation[aria-busy='true']::before {
+    animation: explanation-sweep 1.4s ease-in-out infinite;
+  }
+  @keyframes explanation-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(500%);
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     *,

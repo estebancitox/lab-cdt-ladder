@@ -86,7 +86,7 @@ export function ExplainPanel({ state, matured, rollover, exampleShown, onShowExa
       ) : (
         explanation === null && <p className="notice">{DISCLOSURE}</p>
       )}
-      {state.status === 'pending' && <p className="notice">{PENDING}</p>}
+      {state.status === 'pending' && <p className="explanation-pending">{PENDING}</p>}
       {explanation !== null && (
         <>
           <ExplanationText text={explanation} />

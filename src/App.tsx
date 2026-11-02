@@ -279,14 +279,14 @@ export default function App() {
               </button>
               <button
                 type="button"
-                className="btn-ghost"
+                className="btn-primary"
                 onClick={onExplain}
                 aria-disabled={canExplain ? undefined : true}
                 aria-describedby={matured ? MATURED_HINT_ID : undefined}
               >
                 {BUTTON_LABEL}
               </button>
-              <button type="button" className="btn-primary" onClick={onShare}>
+              <button type="button" className="btn-ghost" onClick={onShare}>
                 {shareState === 'copied' ? 'Enlace copiado' : 'Compartir'}
               </button>
             </div>
