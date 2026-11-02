@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { computeScenario, formatCOP, formatDateShort, formatPercent } from './engine'
+import { computeScenario, dayNumber, formatCOP, formatDateShort, formatPercent } from './engine'
 import type { ValidationIssue } from './engine'
 import { Header } from './components/Header'
 import { ScenarioForm } from './components/ScenarioForm'
@@ -9,6 +9,9 @@ import { ExposureChart, ExposureTable } from './components/ExposureChart'
 import { ProjectionTable } from './components/ProjectionTable'
 import { ScheduleTable } from './components/ScheduleTable'
 import { Warnings } from './components/Warnings'
+import { ExplainPanel, MATURED_HINT_ID } from './components/ExplainPanel'
+import type { ExplainState } from './components/ExplainPanel'
+import { explain } from './api/explain'
 import { clearSavedForm, initialFormState, saveForm } from './state/persistence'
 import { shareURL } from './state/urlCodec'
 import {
@@ -21,6 +24,7 @@ import {
   todayISO,
 } from './ui/form'
 import type { FormState } from './ui/form'
+import { BUTTON_LABEL, messageFor, READY_ANNOUNCEMENT } from './ui/explanation'
 import { applyTheme, effectiveTheme, initThemeMeta } from './ui/theme'
 import type { Theme } from './ui/theme'
 
@@ -32,18 +36,37 @@ export default function App() {
   const dirtyRef = useRef(false)
   const shareTimerRef = useRef<number | undefined>(undefined)
 
+  const [explainState, setExplainState] = useState<ExplainState>({ status: 'idle' })
+  const [exampleShown, setExampleShown] = useState(false)
+  const [explainAnnouncement, setExplainAnnouncement] = useState('')
+  // Bumped by every edit and every request: a reply whose number no longer
+  // matches is for a scenario the form has left behind, and is dropped.
+  const explainSeqRef = useRef(0)
+
+  const clearExplanation = useCallback(() => {
+    explainSeqRef.current += 1
+    setExplainState((s) => (s.status === 'idle' ? s : { status: 'idle' }))
+    setExampleShown(false)
+    setExplainAnnouncement('')
+  }, [])
+
   /**
    * Every user edit goes through here. It (a) enables autosave, so merely
    * opening someone's shared link never overwrites the reader's own saved
-   * scenario, and (b) detaches the URL from its ?s= snapshot — that param
+   * scenario, (b) detaches the URL from its ?s= snapshot — that param
    * outranks storage on load, so leaving it would revert these edits on the
-   * next visit and then persist the stale snapshot over them.
+   * next visit and then persist the stale snapshot over them — and (c) clears
+   * the explanation, which described the numbers the edit is about to change.
    */
-  const editForm = useCallback((updater: (f: FormState) => FormState) => {
-    dirtyRef.current = true
-    if (location.search) history.replaceState(null, '', location.pathname)
-    setForm(updater)
-  }, [])
+  const editForm = useCallback(
+    (updater: (f: FormState) => FormState) => {
+      dirtyRef.current = true
+      if (location.search) history.replaceState(null, '', location.pathname)
+      clearExplanation()
+      setForm(updater)
+    },
+    [clearExplanation],
+  )
 
   // Best-effort autosave, debounced so typing does not hammer storage.
   useEffect(() => {
@@ -118,6 +141,31 @@ export default function App() {
       result.projection.finalMaturity > input.rollover.horizonDate,
   )
 
+  // The API refuses an asOfDate after the last maturity (SPEC §2.1), so the
+  // button stays off with a hint instead of sending a request that ends in a
+  // 400. result.rungs is sorted by maturity: its last entry is the ladder's end.
+  const lastMaturity =
+    result && result.rungs.length > 0 ? result.rungs[result.rungs.length - 1].maturityDate : null
+  const matured = lastMaturity !== null && dayNumber(today) > dayNumber(lastMaturity)
+  const canExplain = result !== null && !matured && explainState.status !== 'pending'
+
+  // One request per click, never retried: each spends about a cent on the
+  // API's side and one of the reader's ten daily requests.
+  const onExplain = async () => {
+    if (!canExplain) return
+    const seq = ++explainSeqRef.current
+    setExplainState({ status: 'pending' })
+    setExampleShown(false)
+    setExplainAnnouncement('')
+    const outcome = await explain(input, today)
+    if (seq !== explainSeqRef.current) return
+    const receivedAt = new Date()
+    setExplainState({ status: 'done', outcome, receivedAt })
+    setExplainAnnouncement(
+      outcome.kind === 'explanation' ? READY_ANNOUNCEMENT : messageFor(outcome, receivedAt),
+    )
+  }
+
   const onShare = async () => {
     const url = shareURL(form)
     // The address bar always ends up holding the shared URL, so even a failed
@@ -159,6 +207,7 @@ export default function App() {
     // edits, so a later visit rebuilds the defaults against that day's date.
     dirtyRef.current = false
     clearSavedForm()
+    clearExplanation()
     history.replaceState(null, '', location.pathname)
     setForm(initialForm())
   }
@@ -228,6 +277,15 @@ export default function App() {
               <button type="button" className="btn-ghost" onClick={onReset}>
                 Restablecer
               </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={onExplain}
+                aria-disabled={canExplain ? undefined : true}
+                aria-describedby={matured ? MATURED_HINT_ID : undefined}
+              >
+                {BUTTON_LABEL}
+              </button>
               <button type="button" className="btn-primary" onClick={onShare}>
                 {shareState === 'copied' ? 'Enlace copiado' : 'Compartir'}
               </button>
@@ -242,6 +300,9 @@ export default function App() {
               : shareState === 'failed'
                 ? 'No se pudo copiar; la URL en la barra de direcciones ya contiene este escenario.'
                 : ''}
+          </p>
+          <p className="visually-hidden" role="status">
+            {explainAnnouncement}
           </p>
           {shareState === 'failed' && (
             <p className="notice">
@@ -263,6 +324,13 @@ export default function App() {
                 result={result}
                 today={today}
                 horizonBeforeFinal={horizonBeforeFinal}
+              />
+              <ExplainPanel
+                state={explainState}
+                matured={matured}
+                rollover={input.rollover !== undefined}
+                exampleShown={exampleShown}
+                onShowExample={() => setExampleShown(true)}
               />
               <div className="plate">
                 <LadderChart

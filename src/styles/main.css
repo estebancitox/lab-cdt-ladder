@@ -489,6 +489,60 @@
     margin-top: 0.35rem;
   }
 
+  /* The explanation panel sits on the page ground, like the warnings, but in
+     the muted register: the signal and accent colors stay with the ceiling. */
+  .explanation {
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 1.75rem;
+  }
+  .explanation > :last-child {
+    margin-bottom: 0;
+  }
+  .explanation-label {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+  /* SPEC §4's two section headers, rendered as headings under the h2 above. */
+  .explanation h3 {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin: 1rem 0 0.4rem;
+  }
+  .explanation-text,
+  .explanation-list {
+    font-size: 0.9375rem;
+    max-width: 62ch;
+    margin-bottom: 0.6rem;
+  }
+  .explanation-list {
+    margin-top: 0;
+    padding-left: 1.1rem;
+  }
+  .explanation-list li + li {
+    margin-top: 0.35rem;
+  }
+  /* Same register as the form's field errors: ink, never signal. */
+  .explanation-error {
+    color: var(--ink);
+    font-size: 0.875rem;
+    padding-left: 0.6rem;
+    border-left: 2px solid var(--ink);
+    margin-bottom: 1rem;
+    max-width: 62ch;
+  }
+  .explanation .btn-ghost {
+    margin-bottom: 1rem;
+  }
+
   .entity-row {
     display: flex;
     gap: 0.5rem;
