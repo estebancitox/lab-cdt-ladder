@@ -88,16 +88,20 @@ export type ExplanationBlock =
 
 /** SPEC §4: the two section headers, verbatim, on their own lines. */
 const HEADERS = new Set(['Qué pasa y cuándo', 'Riesgos'])
-/** SPEC §11.6 accepts either marker, with or without a space after it. */
-const BULLET = /^[-•]\s*/
+/**
+ * SPEC §11.6 accepts either marker, with or without a space after it. A lone
+ * marker, or a "---" rule, is not a bullet and stays a paragraph.
+ */
+const BULLET = /^(?:-(?!-)|•)\s*(?=\S)/
 
 /**
  * SPEC §4 plain text → blocks. A header line becomes a heading, consecutive
  * bullet lines one list, and every other run of lines a paragraph; blank
  * lines separate. Headers and bullets are recognised the way the API's own
  * verification reads them (SPEC §11.1 drops `*` and `_` because a model
- * sometimes bolds a label; §11.6 accepts `-` or `•`), but the text of a
- * paragraph or an item is shown as the API sent it.
+ * sometimes bolds a label; §11.6 accepts `-` or `•`). A recognised header
+ * renders as its canonical §4 text, the one departure from "as sent": the
+ * text of a paragraph or an item is shown exactly as the API sent it.
  */
 export function splitExplanation(text: string): ExplanationBlock[] {
   const blocks: ExplanationBlock[] = []

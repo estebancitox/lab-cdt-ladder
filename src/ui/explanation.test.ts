@@ -65,6 +65,15 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
     ])
   })
 
+  it('keeps a lone marker and a "---" rule as paragraphs', () => {
+    expect(splitExplanation('-\n\n---\n\n•\n\n- real')).toEqual([
+      { type: 'paragraph', text: '-' },
+      { type: 'paragraph', text: '---' },
+      { type: 'paragraph', text: '•' },
+      { type: 'list', items: ['real'] },
+    ])
+  })
+
   it('returns no blocks for blank text', () => {
     expect(splitExplanation('')).toEqual([])
     expect(splitExplanation('\n \n')).toEqual([])
