@@ -44,7 +44,15 @@ function ExplanationText({ text }: { text: string }) {
             return (
               <ul key={i} className="explanation-list">
                 {block.items.map((item, j) => (
-                  <li key={j}>{item}</li>
+                  <li key={j}>
+                    {item.label === null ? (
+                      item.text
+                    ) : (
+                      <>
+                        <strong>{item.label}</strong>: {item.text}
+                      </>
+                    )}
+                  </li>
                 ))}
               </ul>
             )
@@ -88,10 +96,10 @@ export function ExplainPanel({ state, matured, rollover, exampleShown, onShowExa
       )}
       {state.status === 'pending' && <p className="explanation-pending">{PENDING}</p>}
       {explanation !== null && (
-        <>
+        <div className="explanation-body">
           <ExplanationText text={explanation} />
           <p className="notice">{GENERATED_NOTE}</p>
-        </>
+        </div>
       )}
       {failure !== null && state.status === 'done' && (
         <>
@@ -102,10 +110,10 @@ export function ExplainPanel({ state, matured, rollover, exampleShown, onShowExa
             </button>
           )}
           {exampleShown && (
-            <>
+            <div className="explanation-body">
               <p className="notice">{EXAMPLE_LABEL}</p>
               <ExplanationText text={RECORDED_EXAMPLE.text} />
-            </>
+            </div>
           )}
         </>
       )}

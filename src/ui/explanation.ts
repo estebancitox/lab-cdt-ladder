@@ -81,10 +81,13 @@ export function canShowExample(kind: ExplainFailure['kind']): boolean {
   return kind === 'limit' || kind === 'throttled' || kind === 'unavailable' || kind === 'network'
 }
 
+/** One bullet; `label` is set when the item opens with a SPEC §4 risk label and a colon. */
+export type ExplanationItem = { label: string | null; text: string }
+
 export type ExplanationBlock =
   | { type: 'heading'; text: string }
   | { type: 'paragraph'; text: string }
-  | { type: 'list'; items: string[] }
+  | { type: 'list'; items: ExplanationItem[] }
 
 /** SPEC §4: the two section headers, verbatim, on their own lines. */
 const HEADERS = new Set(['Qué pasa y cuándo', 'Riesgos'])
@@ -93,22 +96,48 @@ const HEADERS = new Set(['Qué pasa y cuándo', 'Riesgos'])
  * marker, or a "---" rule, is not a bullet and stays a paragraph.
  */
 const BULLET = /^(?:-(?!-)|•)\s*(?=\S)/
+/**
+ * SPEC §4's four risk labels, as the API writes them: `- <Label>: sentence`.
+ * Only a literal label at the start of the item, followed by a colon, is
+ * split off; anything else stays one run of text.
+ */
+const RISK_LABEL = /^(Tope del seguro|Concentración|Vencimientos agrupados|Diferencia de tasa):\s*/
+/**
+ * Whitespace rule: the API writes amounts as "$ 50.000.000", and a line
+ * break between the sign and the digits would strand the sign. In the
+ * rendered text that space is a no-break space (U+00A0); the API's text and
+ * `RECORDED_EXAMPLE` keep the plain one.
+ */
+const CURRENCY_SPACE = /\$ (?=\d)/g
+function typeset(text: string): string {
+  return text.replace(CURRENCY_SPACE, '$\u00A0')
+}
+function riskItem(item: string): ExplanationItem {
+  const m = RISK_LABEL.exec(item)
+  return m === null
+    ? { label: null, text: typeset(item) }
+    : { label: m[1], text: typeset(item.slice(m[0].length)) }
+}
 
 /**
  * SPEC §4 plain text → blocks. A header line becomes a heading, consecutive
  * bullet lines one list, and every other run of lines a paragraph; blank
  * lines separate. Headers and bullets are recognised the way the API's own
  * verification reads them (SPEC §11.1 drops `*` and `_` because a model
- * sometimes bolds a label; §11.6 accepts `-` or `•`). A recognised header
- * renders as its canonical §4 text, the one departure from "as sent": the
- * text of a paragraph or an item is shown exactly as the API sent it.
+ * sometimes bolds a label; §11.6 accepts `-` or `•`). Two departures from
+ * "as sent": a recognised header renders as its canonical §4 text, and the
+ * whitespace rule above; otherwise the text of a paragraph or an item is
+ * shown exactly as the API sent it, with a §4 risk label split off for the
+ * panel to set in bold.
  */
 export function splitExplanation(text: string): ExplanationBlock[] {
   const blocks: ExplanationBlock[] = []
   let paragraph: string[] = []
-  let list: string[] | null = null
+  let list: ExplanationItem[] | null = null
   const closeParagraph = () => {
-    if (paragraph.length > 0) blocks.push({ type: 'paragraph', text: paragraph.join(' ') })
+    if (paragraph.length > 0) {
+      blocks.push({ type: 'paragraph', text: typeset(paragraph.join(' ')) })
+    }
     paragraph = []
   }
   for (const raw of text.split('\n')) {
@@ -131,7 +160,7 @@ export function splitExplanation(text: string): ExplanationBlock[] {
         list = []
         blocks.push({ type: 'list', items: list })
       }
-      list.push(line.replace(BULLET, '').trim())
+      list.push(riskItem(line.replace(BULLET, '').trim()))
       continue
     }
     list = null

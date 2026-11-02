@@ -514,7 +514,10 @@
     height: 2px;
     background: var(--accent);
   }
-  .explanation > :last-child {
+  /* The body wraps what arrives (so it can fade in) and is always the last
+     child, so its own last child closes the panel the same way. */
+  .explanation > :last-child,
+  .explanation-body > :last-child {
     margin-bottom: 0;
   }
   .explanation-label {
@@ -800,6 +803,15 @@
     }
     to {
       transform: translateX(500%);
+    }
+  }
+  /* The explanation arrives: opacity only, so nothing moves. */
+  .explanation-body {
+    animation: explanation-arrive 0.25s ease-out;
+  }
+  @keyframes explanation-arrive {
+    from {
+      opacity: 0;
     }
   }
   @media (prefers-reduced-motion: reduce) {

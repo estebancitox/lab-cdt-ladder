@@ -24,7 +24,16 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
     expect(blocks[0]).toEqual({ type: 'heading', text: 'Qué pasa y cuándo' })
     expect(blocks[3]).toEqual({ type: 'heading', text: 'Riesgos' })
     expect(blocks[4]).toEqual({ type: 'paragraph', text: 'Sin riesgos para señalar con estos datos.' })
-    expect((blocks[1] as { text: string }).text.startsWith('Tu escalera tiene $ 50.000.000')).toBe(true)
+    expect((blocks[1] as { text: string }).text.startsWith('Tu escalera tiene $\u00A050.000.000')).toBe(true)
+  })
+
+  it('renders the space between "$" and a digit as a no-break space, and leaves every other space alone', () => {
+    expect(splitExplanation('Paga $ 3.109.733 de $ 50.000.000; $5 y $ x quedan.\n- Concentración: $ 1 en $ dos')).toEqual([
+      { type: 'paragraph', text: 'Paga $\u00A03.109.733 de $\u00A050.000.000; $5 y $ x quedan.' },
+      { type: 'list', items: [{ label: 'Concentración', text: '$\u00A01 en $ dos' }] },
+    ])
+    expect(RECORDED_EXAMPLE.text).toContain('$ 50.000.000')
+    expect(RECORDED_EXAMPLE.text).not.toContain('\u00A0')
   })
 
   it('groups consecutive "- " lines into one list and ignores surrounding blank lines', () => {
@@ -38,9 +47,46 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
       {
         type: 'list',
         items: [
-          'Tope del seguro: una frase.',
-          'Concentración: otra frase.',
-          'Diferencia de tasa: la tercera.',
+          { label: 'Tope del seguro', text: 'una frase.' },
+          { label: 'Concentración', text: 'otra frase.' },
+          { label: 'Diferencia de tasa', text: 'la tercera.' },
+        ],
+      },
+    ])
+  })
+
+  it('splits off each of the four §4 risk labels when the item opens with it and a colon', () => {
+    expect(
+      splitExplanation(
+        '- Tope del seguro:   Banco A supera el tope.\n- Concentración: 70 % en una entidad.\n' +
+          '- Vencimientos agrupados: los peldaños 1 y 2.\n- Diferencia de tasa:',
+      ),
+    ).toEqual([
+      {
+        type: 'list',
+        items: [
+          { label: 'Tope del seguro', text: 'Banco A supera el tope.' },
+          { label: 'Concentración', text: '70 % en una entidad.' },
+          { label: 'Vencimientos agrupados', text: 'los peldaños 1 y 2.' },
+          { label: 'Diferencia de tasa', text: '' },
+        ],
+      },
+    ])
+  })
+
+  it('keeps an item whole when its label is not one of the four, has no colon, or is not at the start', () => {
+    expect(
+      splitExplanation(
+        '- Otra cosa: una frase.\n- Concentración alta en una entidad.\n- Nota sobre Tope del seguro: x.\n- tope del seguro: y.',
+      ),
+    ).toEqual([
+      {
+        type: 'list',
+        items: [
+          { label: null, text: 'Otra cosa: una frase.' },
+          { label: null, text: 'Concentración alta en una entidad.' },
+          { label: null, text: 'Nota sobre Tope del seguro: x.' },
+          { label: null, text: 'tope del seguro: y.' },
         ],
       },
     ])
@@ -49,9 +95,9 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
   it('joins the lines of one paragraph and starts a new list after a paragraph', () => {
     expect(splitExplanation('línea uno\nlínea dos\n- a\ntexto\n- b')).toEqual([
       { type: 'paragraph', text: 'línea uno línea dos' },
-      { type: 'list', items: ['a'] },
+      { type: 'list', items: [{ label: null, text: 'a' }] },
       { type: 'paragraph', text: 'texto' },
-      { type: 'list', items: ['b'] },
+      { type: 'list', items: [{ label: null, text: 'b' }] },
     ])
   })
 
@@ -60,7 +106,11 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
       { type: 'heading', text: 'Riesgos' },
       {
         type: 'list',
-        items: ['**Tope del seguro:** a.', 'Concentración: b.', 'Diferencia de tasa: c.'],
+        items: [
+          { label: null, text: '**Tope del seguro:** a.' },
+          { label: 'Concentración', text: 'b.' },
+          { label: 'Diferencia de tasa', text: 'c.' },
+        ],
       },
     ])
   })
@@ -70,7 +120,7 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
       { type: 'paragraph', text: '-' },
       { type: 'paragraph', text: '---' },
       { type: 'paragraph', text: '•' },
-      { type: 'list', items: ['real'] },
+      { type: 'list', items: [{ label: null, text: 'real' }] },
     ])
   })
 
