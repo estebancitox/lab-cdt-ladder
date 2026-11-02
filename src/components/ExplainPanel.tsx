@@ -20,7 +20,7 @@ export type ExplainState =
   /** `receivedAt` anchors the reset-hour label of a 429 to the moment it arrived. */
   | { status: 'done'; outcome: ExplainOutcome; receivedAt: Date }
 
-/** The id the head's button points at through aria-describedby while disabled. */
+/** The id the head's button points at through aria-describedby while the ladder is fully matured. */
 export const MATURED_HINT_ID = 'explain-hint'
 
 interface Props {

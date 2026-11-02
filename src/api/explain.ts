@@ -18,6 +18,14 @@ export const EXPLAIN_URL = 'https://yi67pnlyvlrjfrwwx4lntygey40nmnjq.lambda-url.
 export const DEFAULT_TIMEOUT_MS = 30_000
 
 /**
+ * SPEC §8.2: both counters reset at the next 00:00 UTC, so a conformant
+ * `retry-after` is at most one day. A larger value is not the API's and is
+ * treated as absent, which also keeps the hour label away from an Invalid
+ * Date (Intl throws a RangeError on one).
+ */
+export const MAX_RETRY_AFTER_SECONDS = 86_400
+
+/**
  * SPEC §7 fixed strings, byte-exact. Fallbacks only: an error reply always
  * carries its own `text`, and these stand in when a body has none (a platform
  * reply, an unparsable body, an unknown status).
@@ -42,14 +50,14 @@ export interface ExplainRequest {
 
 export type ExplainOutcome =
   | { kind: 'explanation'; text: string }
-  /** A §8.2 daily cap. `retryAfterSeconds` is null when the header is missing or unreadable. */
+  /** A §8.2 daily cap. `retryAfterSeconds` is null when the header is missing, unreadable or over a day. */
   | { kind: 'limit'; scope: 'ip' | 'daily'; retryAfterSeconds: number | null; text: string }
   /** The platform's own 429: a throttled URL or the owner's kill switch. No `error.code`. */
   | { kind: 'throttled' }
   /** 503, 502, 500, an unknown status, or a 200 whose body is not the contract's. */
   | { kind: 'unavailable'; text: string }
-  /** 400 or 413: the first issue's message, or the API's fixed text. */
-  | { kind: 'invalid'; message: string }
+  /** 400 or 413: the first issue that carries a message, if any, and the API's fixed text. */
+  | { kind: 'invalid'; issue: string | null; text: string }
   /** fetch threw (CORS, offline, DNS), the body read failed, or the client timeout fired. */
   | { kind: 'network' }
 
@@ -86,6 +94,14 @@ export function buildExplainRequest(input: ScenarioInput, asOfDate: ISODate): Ex
 
 const defaultFetch: typeof fetch = (url, init) => globalThis.fetch(url, init)
 
+/** `AbortSignal.timeout` arrived in Safari 16; older engines get the same signal by hand. */
+function timeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal.timeout === 'function') return AbortSignal.timeout(ms)
+  const controller = new AbortController()
+  setTimeout(() => controller.abort(), ms)
+  return controller.signal
+}
+
 export async function explain(
   input: ScenarioInput,
   asOfDate: ISODate,
@@ -101,7 +117,7 @@ export async function explain(
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(buildExplainRequest(input, asOfDate)),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: timeoutSignal(timeoutMs),
     })
     status = response.status
     retryAfter = response.headers.get('retry-after')
@@ -127,11 +143,13 @@ function parseBody(raw: string): Dict | null {
   }
 }
 
-/** SPEC §7: whole seconds. Anything else is treated as absent. */
+/** SPEC §7: whole seconds, at most a day. Anything else is treated as absent. */
 function parseRetryAfter(header: string | null): number | null {
   if (header === null) return null
   const t = header.trim()
-  return /^\d+$/.test(t) ? Number(t) : null
+  if (!/^\d+$/.test(t)) return null
+  const seconds = Number(t)
+  return seconds <= MAX_RETRY_AFTER_SECONDS ? seconds : null
 }
 
 /** SPEC §7.1–§7.3: schema issues carry no message; engine and API issues do. */
@@ -151,7 +169,9 @@ function classify(status: number, retryAfter: string | null, raw: string): Expla
   const code = typeof error?.code === 'string' ? error.code : null
 
   if (status === 200) {
-    return text !== null
+    // SPEC §7.4: a blank reply is a 503 on the API's side, so a blank 200 is
+    // not the contract's and is not shown as an explanation.
+    return text !== null && text.trim() !== ''
       ? { kind: 'explanation', text }
       : { kind: 'unavailable', text: UPSTREAM_MESSAGE }
   }
@@ -167,7 +187,7 @@ function classify(status: number, retryAfter: string | null, raw: string): Expla
     return { kind: 'throttled' }
   }
   if (status === 400 || status === 413) {
-    return { kind: 'invalid', message: firstIssueMessage(error) ?? text ?? ERROR_MESSAGE }
+    return { kind: 'invalid', issue: firstIssueMessage(error), text: text ?? ERROR_MESSAGE }
   }
   return { kind: 'unavailable', text: text ?? UPSTREAM_MESSAGE }
 }

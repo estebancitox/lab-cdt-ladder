@@ -55,19 +55,34 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
     ])
   })
 
+  it('recognises a bolded header and bullet marks the way SPEC §11.1 and §11.6 do, keeping the item text as sent', () => {
+    expect(splitExplanation('**Riesgos**\n\n- **Tope del seguro:** a.\n• Concentración: b.\n•Diferencia de tasa: c.')).toEqual([
+      { type: 'heading', text: 'Riesgos' },
+      {
+        type: 'list',
+        items: ['**Tope del seguro:** a.', 'Concentración: b.', 'Diferencia de tasa: c.'],
+      },
+    ])
+  })
+
   it('returns no blocks for blank text', () => {
     expect(splitExplanation('')).toEqual([])
     expect(splitExplanation('\n \n')).toEqual([])
   })
 })
 
-describe('resetTimeLabel — the reader\'s local time of the next 00:00 UTC', () => {
-  it('is 19:00 in Bogotá, 00:00 in UTC, and HH:mm anywhere', () => {
+describe("resetTimeLabel — the reader's local time of the next 00:00 UTC", () => {
+  it('is 19:00 in Bogotá, 00:00 in UTC, 01:00 in Madrid', () => {
+    expect(resetTimeLabel(TO_MIDNIGHT_UTC, RECEIVED_AT, 'America/Bogota')).toBe('19:00')
+    expect(resetTimeLabel(TO_MIDNIGHT_UTC, RECEIVED_AT, 'UTC')).toBe('00:00')
+    expect(resetTimeLabel(TO_MIDNIGHT_UTC, RECEIVED_AT, 'Europe/Madrid')).toBe('01:00')
+  })
+
+  it("without a zone it uses the process's, which the CI runs as Bogotá and as UTC", () => {
     const label = resetTimeLabel(TO_MIDNIGHT_UTC, RECEIVED_AT)
     expect(label).toMatch(/^\d{2}:\d{2}$/)
     const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    if (zone === 'America/Bogota') expect(label).toBe('19:00')
-    if (zone === 'UTC' || zone === 'Etc/UTC') expect(label).toBe('00:00')
+    expect(label).toBe(resetTimeLabel(TO_MIDNIGHT_UTC, RECEIVED_AT, zone))
   })
 })
 
@@ -106,15 +121,22 @@ describe('messageFor — the copy per failure', () => {
     ).toBe('La demo alcanzó su tope de explicaciones de hoy. Vuelve mañana.')
   })
 
-  it('throttled, unavailable, invalid and network', () => {
+  it('invalid names the issue when there is one, and shows the fixed text alone otherwise', () => {
+    expect(
+      messageFor(
+        { kind: 'invalid', issue: 'El plazo no puede superar 3.650 días.', text: 'Fijo.' },
+        RECEIVED_AT,
+      ),
+    ).toBe('Este escenario no se puede explicar: El plazo no puede superar 3.650 días.')
+    expect(messageFor({ kind: 'invalid', issue: null, text: 'Fijo.' }, RECEIVED_AT)).toBe('Fijo.')
+  })
+
+  it('throttled, unavailable and network', () => {
     expect(messageFor({ kind: 'throttled' }, RECEIVED_AT)).toBe(
       'El servicio está pausado en este momento.',
     )
     expect(messageFor({ kind: 'unavailable', text: 'Texto fijo del API.' }, RECEIVED_AT)).toBe(
       'Texto fijo del API.',
-    )
-    expect(messageFor({ kind: 'invalid', message: 'El plazo no puede superar 3.650 días.' }, RECEIVED_AT)).toBe(
-      'Este escenario no se puede explicar: El plazo no puede superar 3.650 días.',
     )
     expect(messageFor({ kind: 'network' }, RECEIVED_AT)).toBe(
       'No se pudo contactar el servicio. Revisa tu conexión e inténtalo de nuevo.',

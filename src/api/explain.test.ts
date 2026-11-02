@@ -5,6 +5,7 @@ import {
   explain,
   EXPLAIN_URL,
   LIMIT_MESSAGE,
+  MAX_RETRY_AFTER_SECONDS,
   UPSTREAM_MESSAGE,
 } from './explain'
 import type { ScenarioInput } from '../engine'
@@ -43,6 +44,19 @@ function replying(status: number, body: string | object, headers: Record<string,
     return new Response(text, { status, headers })
   }
   return { fetchFn, calls }
+}
+
+/** A fetch that never answers and rejects only when its signal aborts. */
+function hanging() {
+  const signals: AbortSignal[] = []
+  const fetchFn: typeof fetch = (_url, init) =>
+    new Promise((_resolve, reject) => {
+      const signal = init?.signal
+      if (!signal) return
+      signals.push(signal)
+      signal.addEventListener('abort', () => reject(signal.reason))
+    })
+  return { fetchFn, signals }
 }
 
 const PLATFORM_429 = {
@@ -120,9 +134,14 @@ describe('explain — outcomes', () => {
     })
   })
 
-  it('200 whose JSON has no text → unavailable', async () => {
-    const { fetchFn } = replying(200, { explanation: 'wrong key' })
-    expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({
+  it('200 whose JSON has no text, or a blank one → unavailable', async () => {
+    const wrongKey = replying(200, { explanation: 'wrong key' })
+    expect(await explain(input(), '2027-01-04', { fetch: wrongKey.fetchFn })).toEqual({
+      kind: 'unavailable',
+      text: UPSTREAM_MESSAGE,
+    })
+    const blank = replying(200, { text: ' \n ' })
+    expect(await explain(input(), '2027-01-04', { fetch: blank.fetchFn })).toEqual({
       kind: 'unavailable',
       text: UPSTREAM_MESSAGE,
     })
@@ -179,7 +198,24 @@ describe('explain — outcomes', () => {
     })
   })
 
-  it('400 with an engine issue → invalid with that message', async () => {
+  it('429 retry-after over one day is not the API\'s and reads as absent', async () => {
+    const body = { text: LIMIT_MESSAGE, error: { code: 'ip_limit_reached', issues: [] } }
+    const atTheCap = replying(429, body, { 'retry-after': String(MAX_RETRY_AFTER_SECONDS) })
+    expect(await explain(input(), '2027-01-04', { fetch: atTheCap.fetchFn })).toMatchObject({
+      retryAfterSeconds: MAX_RETRY_AFTER_SECONDS,
+    })
+    const overTheCap = replying(429, body, { 'retry-after': String(MAX_RETRY_AFTER_SECONDS + 1) })
+    expect(await explain(input(), '2027-01-04', { fetch: overTheCap.fetchFn })).toMatchObject({
+      retryAfterSeconds: null,
+    })
+    // Would make an Invalid Date downstream, where Intl throws a RangeError.
+    const absurd = replying(429, body, { 'retry-after': '9999999999999' })
+    expect(await explain(input(), '2027-01-04', { fetch: absurd.fetchFn })).toMatchObject({
+      retryAfterSeconds: null,
+    })
+  })
+
+  it('400 with an engine issue → invalid with that message and the fixed text', async () => {
     const { fetchFn } = replying(400, {
       text: ERROR_MESSAGE,
       error: {
@@ -196,7 +232,8 @@ describe('explain — outcomes', () => {
     })
     expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({
       kind: 'invalid',
-      message: 'El monto debe ser un entero en pesos, mayor que cero.',
+      issue: 'El monto debe ser un entero en pesos, mayor que cero.',
+      text: ERROR_MESSAGE,
     })
   })
 
@@ -213,29 +250,32 @@ describe('explain — outcomes', () => {
     })
     expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({
       kind: 'invalid',
-      message: 'Fecha inválida.',
+      issue: 'Fecha inválida.',
+      text: ERROR_MESSAGE,
     })
   })
 
-  it('400 with no issue message → invalid with the fixed error text', async () => {
+  it('400 with no issue message → invalid with a null issue and the fixed text', async () => {
     const { fetchFn } = replying(400, {
       text: ERROR_MESSAGE,
       error: { code: 'invalid_input', issues: [{ source: 'schema', keyword: 'type', path: '' }] },
     })
     expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({
       kind: 'invalid',
-      message: ERROR_MESSAGE,
+      issue: null,
+      text: ERROR_MESSAGE,
     })
   })
 
-  it('413 → invalid with the fixed error text', async () => {
+  it('413 → invalid with a null issue and the fixed text', async () => {
     const { fetchFn } = replying(413, {
       text: ERROR_MESSAGE,
       error: { code: 'payload_too_large', issues: [] },
     })
     expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({
       kind: 'invalid',
-      message: ERROR_MESSAGE,
+      issue: null,
+      text: ERROR_MESSAGE,
     })
   })
 
@@ -244,12 +284,13 @@ describe('explain — outcomes', () => {
     [503, 'upstream_truncated'],
     [502, 'verification_failed'],
     [500, 'internal_error'],
-  ])("%i %s → unavailable with the API's text", async (status, code) => {
-    const { fetchFn } = replying(status, { text: UPSTREAM_MESSAGE, error: { code, issues: [] } })
+  ])("%i %s → unavailable with the API's text, after exactly one call", async (status, code) => {
+    const { fetchFn, calls } = replying(status, { text: UPSTREAM_MESSAGE, error: { code, issues: [] } })
     expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({
       kind: 'unavailable',
       text: UPSTREAM_MESSAGE,
     })
+    expect(calls).toHaveLength(1)
   })
 
   it('an unknown status with a non-JSON body → unavailable with the fixed upstream text', async () => {
@@ -260,23 +301,36 @@ describe('explain — outcomes', () => {
     })
   })
 
-  it('a fetch that throws (CORS, offline, DNS) → network', async () => {
+  it('a fetch that throws (CORS, offline, DNS) → network, after exactly one call', async () => {
+    let calls = 0
     const fetchFn: typeof fetch = async () => {
+      calls += 1
       throw new TypeError('Failed to fetch')
     }
     expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({ kind: 'network' })
+    expect(calls).toBe(1)
   })
 
   it('the client timeout aborts the call → network', async () => {
-    let seen: AbortSignal | undefined
-    const hanging: typeof fetch = (_url, init) =>
-      new Promise((_resolve, reject) => {
-        seen = init?.signal ?? undefined
-        init?.signal?.addEventListener('abort', () => reject(init.signal!.reason))
-      })
-    const outcome = await explain(input(), '2027-01-04', { fetch: hanging, timeoutMs: 1 })
+    const { fetchFn, signals } = hanging()
+    const outcome = await explain(input(), '2027-01-04', { fetch: fetchFn, timeoutMs: 1 })
     expect(outcome).toEqual({ kind: 'network' })
-    expect(seen?.aborted).toBe(true)
+    expect(signals).toHaveLength(1)
+    expect(signals[0].aborted).toBe(true)
+  })
+
+  it('without AbortSignal.timeout (Safari before 16) the timeout still fires → network', async () => {
+    const original = AbortSignal.timeout
+    Object.defineProperty(AbortSignal, 'timeout', { value: undefined, configurable: true })
+    try {
+      const { fetchFn, signals } = hanging()
+      const outcome = await explain(input(), '2027-01-04', { fetch: fetchFn, timeoutMs: 1 })
+      expect(outcome).toEqual({ kind: 'network' })
+      expect(signals).toHaveLength(1)
+      expect(signals[0].aborted).toBe(true)
+    } finally {
+      Object.defineProperty(AbortSignal, 'timeout', { value: original, configurable: true })
+    }
   })
 
   it('a body read that fails → network', async () => {

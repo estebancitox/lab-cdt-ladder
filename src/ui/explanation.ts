@@ -26,11 +26,21 @@ export type ExplainFailure = Exclude<ExplainOutcome, { kind: 'explanation' }>
 /**
  * The §8.2 counters reset at 00:00 UTC; `retry-after` counts the seconds to
  * it. The label is that instant in the reader's own zone (19:00 in Bogotá),
- * so it is computed, never hard-coded.
+ * so it is computed, never hard-coded. `timeZone` exists for the tests; the
+ * panel leaves it unset and gets the browser's zone.
  */
-export function resetTimeLabel(retryAfterSeconds: number, receivedAt: Date): string {
+export function resetTimeLabel(
+  retryAfterSeconds: number,
+  receivedAt: Date,
+  timeZone?: string,
+): string {
   const at = new Date(receivedAt.getTime() + retryAfterSeconds * 1000)
-  return new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at)
+  return new Intl.DateTimeFormat('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).format(at)
 }
 
 export function messageFor(failure: ExplainFailure, receivedAt: Date): string {
@@ -56,7 +66,11 @@ export function messageFor(failure: ExplainFailure, receivedAt: Date): string {
     case 'unavailable':
       return failure.text
     case 'invalid':
-      return `Este escenario no se puede explicar: ${failure.message}`
+      // Without an issue to name, the API's own sentence stands alone: prefixing
+      // it would read "no se puede explicar: No puedo explicar…".
+      return failure.issue === null
+        ? failure.text
+        : `Este escenario no se puede explicar: ${failure.issue}`
     case 'network':
       return 'No se pudo contactar el servicio. Revisa tu conexión e inténtalo de nuevo.'
   }
@@ -74,11 +88,16 @@ export type ExplanationBlock =
 
 /** SPEC §4: the two section headers, verbatim, on their own lines. */
 const HEADERS = new Set(['Qué pasa y cuándo', 'Riesgos'])
+/** SPEC §11.6 accepts either marker, with or without a space after it. */
+const BULLET = /^[-•]\s*/
 
 /**
  * SPEC §4 plain text → blocks. A header line becomes a heading, consecutive
- * `- ` lines one list, and every other run of lines a paragraph; blank lines
- * separate. Nothing else is transformed: the text is shown as the API sent it.
+ * bullet lines one list, and every other run of lines a paragraph; blank
+ * lines separate. Headers and bullets are recognised the way the API's own
+ * verification reads them (SPEC §11.1 drops `*` and `_` because a model
+ * sometimes bolds a label; §11.6 accepts `-` or `•`), but the text of a
+ * paragraph or an item is shown as the API sent it.
  */
 export function splitExplanation(text: string): ExplanationBlock[] {
   const blocks: ExplanationBlock[] = []
@@ -95,19 +114,20 @@ export function splitExplanation(text: string): ExplanationBlock[] {
       list = null
       continue
     }
-    if (HEADERS.has(line)) {
+    const unmarked = line.replace(/[*_]/g, '').trim()
+    if (HEADERS.has(unmarked)) {
       closeParagraph()
       list = null
-      blocks.push({ type: 'heading', text: line })
+      blocks.push({ type: 'heading', text: unmarked })
       continue
     }
-    if (line.startsWith('- ')) {
+    if (BULLET.test(line)) {
       closeParagraph()
       if (list === null) {
         list = []
         blocks.push({ type: 'list', items: list })
       }
-      list.push(line.slice(2).trim())
+      list.push(line.replace(BULLET, '').trim())
       continue
     }
     list = null
@@ -125,6 +145,5 @@ export function splitExplanation(text: string): ExplanationBlock[] {
  * ceiling 50 000 000, one entity per rung.
  */
 export const RECORDED_EXAMPLE = {
-  recordedOn: '2026-10-29',
   text: "Qué pasa y cuándo\n\nTu escalera tiene $ 50.000.000 de capital repartidos en 3 peldaños y 3 entidades, con una tasa promedio de 13,5%. El peldaño 1, en Banco Andino, vence el 4 de abril de 2027. El peldaño 2, en Cooperativa Ñame & Café, vence el 3 de julio de 2027. El peldaño 3, en Entidad B, vence el 1 de octubre de 2027.\n\nEl próximo vencimiento está a 90 días de hoy. La escalera paga $ 3.109.733 de interés neto, después de una retención de $ 129.572.\n\nRiesgos\n\nSin riesgos para señalar con estos datos.",
 } as const

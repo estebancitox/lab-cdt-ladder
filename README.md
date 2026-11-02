@@ -51,8 +51,9 @@ copies the link; opening it reproduces the scenario exactly. The last
 scenario also persists in localStorage — shared URL wins over saved state,
 saved state over defaults. The calculator needs no backend, and there are no
 cookies and no analytics: the URL and your browser's storage are the only two
-places a scenario lives. The one thing that ever leaves the browser is the
-scenario you choose to send with the explanation button, described below.
+places a scenario lives. The only data that ever leaves the browser is the
+scenario, with today's date, that you choose to send with the explanation
+button, described below.
 
 ## Rollover is a model, not a promise
 
@@ -77,7 +78,8 @@ is pressed, nothing is retried on its own, and any edit clears the text, so an
 explanation never outlives the numbers it describes. The panel says where the
 scenario goes before the first click, and every refusal the API can give — a
 daily cap per connection, a cap for the demo as a whole, the service being
-unavailable — is shown as a message, with a recorded example to read instead.
+unavailable — is shown as a message; when the service gave no answer, a
+recorded example is offered instead.
 
 ## Tests gate the deploy
 

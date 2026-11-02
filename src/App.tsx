@@ -89,6 +89,11 @@ export default function App() {
   }, [])
 
   const today = todayISO()
+  // Past local midnight the readouts move ("en N días"); an explanation that
+  // still says "a N días de hoy" would outlive the numbers it describes.
+  useEffect(() => {
+    clearExplanation()
+  }, [today, clearExplanation])
   const { input, issues } = useMemo(() => buildScenario(form), [form])
   const result = useMemo(
     () => (issues.length === 0 && input.rungs.length > 0 ? computeScenario(input) : null),
