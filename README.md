@@ -49,8 +49,10 @@ in the UI. It is a modeling tool, not financial advice.
 parameters, rollover) into a versioned, strictly-validated URL parameter and
 copies the link; opening it reproduces the scenario exactly. The last
 scenario also persists in localStorage — shared URL wins over saved state,
-saved state over defaults. No backend, no cookies, no analytics: the URL and
-your browser's storage are the only two places a scenario lives.
+saved state over defaults. The calculator needs no backend, and there are no
+cookies and no analytics: the URL and your browser's storage are the only two
+places a scenario lives. The one thing that ever leaves the browser is the
+scenario you choose to send with the explanation button, described below.
 
 ## Rollover is a model, not a promise
 
@@ -63,6 +65,19 @@ at every maturity means a short final stub can end below an earlier peak —
 summed per entity even though chains peak on different dates. Compounding can
 cross the ceiling in later cycles even when the first term stays under it, and
 the sum is an upper bound: it errs toward warning early, never late.
+
+## An explanation on demand
+
+"Explícame esta escalera" sends the current scenario — ladder, entities and
+fiscal parameters, never the rollover settings — to
+[lab-cdt-ladder-api](https://github.com/estebancitox/lab-cdt-ladder-api),
+which asks a language model for a plain-text explanation in Spanish, and
+renders the reply under the summary readouts. Nothing is sent until the button
+is pressed, nothing is retried on its own, and any edit clears the text, so an
+explanation never outlives the numbers it describes. The panel says where the
+scenario goes before the first click, and every refusal the API can give — a
+daily cap per connection, a cap for the demo as a whole, the service being
+unavailable — is shown as a message, with a recorded example to read instead.
 
 ## Tests gate the deploy
 
@@ -86,5 +101,6 @@ No badge — the pipeline is the statement.
 | `Tope del seguro de depósitos` | Editable coverage ceiling per depositor per institution — check the current figure                    |
 | `Renovación`                   | Off, N renewals, or until a horizon date; reinvests capital + net interest at the same rate           |
 | `Compartir`                    | Copies a URL that reproduces the scenario exactly                                                     |
+| `Explícame esta escalera`      | Sends the scenario to lab-cdt-ladder-api and shows its explanation; any edit clears it                |
 | `Restablecer`                  | Back to defaults; clears the saved scenario                                                           |
 | `claro / oscuro`               | Theme toggle; the instrument plates stay dark in both                                                 |
