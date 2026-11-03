@@ -7,7 +7,7 @@ deployed by CI.
 
 **Live demo:** <https://estebancitox.github.io/lab-cdt-ladder/>
 
-![CDT ladder recalculating live — entity exposure crossing the deposit-insurance ceiling triggers the warning](demo.gif)
+![The calculator answering "Explícame esta escalera": the busy state "Pensando… tarda unos segundos", then the explanation arriving and naming the "Tope del seguro" risk](demo.gif)
 
 ## Why this one has a toolchain
 
