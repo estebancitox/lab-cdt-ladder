@@ -1,4 +1,4 @@
-import { dayNumber, formatCOP, formatDateShort, MONTHS_ES, parseISODate, toISODate } from '../engine'
+import { dayNumber, formatCOP, formatDateShort, MONTHS_SHORT, parseISODate, toISODate } from '../engine'
 import type { ISODate, RungProjection, RungResult } from '../engine'
 import { useContainerWidth } from '../ui/useContainerWidth'
 
@@ -36,7 +36,7 @@ function monthTicks(startDay: number, endDay: number, innerW: number): Tick[] {
   for (;;) {
     const day = dayNumber(toISODate({ y, m, d: 1 }))
     if (day > endDay) break
-    all.push({ day, label: m === 1 ? `${MONTHS_ES[m - 1]} ${String(y).slice(2)}` : MONTHS_ES[m - 1] })
+    all.push({ day, label: m === 1 ? `${MONTHS_SHORT[m - 1]} ${String(y).slice(2)}` : MONTHS_SHORT[m - 1] })
     m += 1
     if (m > 12) {
       m = 1
@@ -113,8 +113,8 @@ export function LadderChart({ rungs, startDate, today, projections }: Props) {
           // Beyond a year, day+month alone would repeat identically across years.
           const dateLabel =
             dEnd - d0 > 366
-              ? `${d} ${MONTHS_ES[m - 1]} ${String(y).slice(2)}`
-              : `${d} ${MONTHS_ES[m - 1]}`
+              ? `${d} ${MONTHS_SHORT[m - 1]} ${String(y).slice(2)}`
+              : `${d} ${MONTHS_SHORT[m - 1]}`
           const amountLabel = `${formatCOP(r.principal)} · ${r.days} d`
           const amountFits = barW > amountLabel.length * CHAR_W + 16
           const dateOutsideFits = chainX + 8 + dateLabel.length * CHAR_W < width - M_RIGHT
