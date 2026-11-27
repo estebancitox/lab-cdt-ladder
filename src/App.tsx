@@ -9,8 +9,8 @@ import { ExposureChart, ExposureTable } from './components/ExposureChart'
 import { ProjectionTable } from './components/ProjectionTable'
 import { ScheduleTable } from './components/ScheduleTable'
 import { Warnings } from './components/Warnings'
-import { ExplainPanel, MATURED_HINT_ID } from './components/ExplainPanel'
-import type { ExplainState } from './components/ExplainPanel'
+import { ExplainPanel } from './components/ExplainPanel'
+import type { ExplainState, SentSummary } from './components/ExplainPanel'
 import { explain } from './api/explain'
 import { clearSavedForm, initialFormState, saveForm } from './state/persistence'
 import { shareURL } from './state/urlCodec'
@@ -24,9 +24,16 @@ import {
   todayISO,
 } from './ui/form'
 import type { FormState } from './ui/form'
-import { BUTTON_LABEL, messageFor, READY_ANNOUNCEMENT } from './ui/explanation'
+import { CUE_WINDOW_MS, SLOW_AFTER_MS } from './ui/explanation'
 import { applyTheme, effectiveTheme, initThemeMeta } from './ui/theme'
 import type { Theme } from './ui/theme'
+
+// Development only: with a hash such as `#explain=ok`, src/dev/explainPreview
+// answers the explain button from fixtures instead of the network. It loads
+// with the page, so it reads the hash before Share, Reset or an edit rewrites
+// the address. A production build drops this line, the branch that uses it
+// and the module.
+const explainPreview = import.meta.env.DEV ? import('./dev/explainPreview') : null
 
 export default function App() {
   const [init] = useState(initialFormState)
@@ -38,7 +45,13 @@ export default function App() {
 
   const [explainState, setExplainState] = useState<ExplainState>({ status: 'idle' })
   const [exampleShown, setExampleShown] = useState(false)
-  const [explainAnnouncement, setExplainAnnouncement] = useState('')
+  // The idle button's cue belongs to the start of a visit: it ends with the
+  // first click or when its window closes, whichever comes first, for good.
+  const [explainCue, setExplainCue] = useState(true)
+  useEffect(() => {
+    const t = window.setTimeout(() => setExplainCue(false), CUE_WINDOW_MS)
+    return () => window.clearTimeout(t)
+  }, [])
   // Bumped by every edit and every request: a reply whose number no longer
   // matches is for a scenario the form has left behind, and is dropped.
   const explainSeqRef = useRef(0)
@@ -47,7 +60,6 @@ export default function App() {
     explainSeqRef.current += 1
     setExplainState((s) => (s.status === 'idle' ? s : { status: 'idle' }))
     setExampleShown(false)
-    setExplainAnnouncement('')
   }, [])
 
   /**
@@ -149,21 +161,46 @@ export default function App() {
   const matured = lastMaturity !== null && dayNumber(today) > dayNumber(lastMaturity)
   const canExplain = result !== null && !matured && explainState.status !== 'pending'
 
+  // What a click sends, for the panel to show back while it waits. Any edit
+  // returns the panel to idle, so during a wait this is the request in flight.
+  const sent = useMemo<SentSummary>(
+    () => ({
+      rungs: input.rungs.length,
+      institutions: new Set(input.rungs.map((r) => r.entityId)).size,
+      principal: input.rungs.reduce((sum, r) => sum + r.principal, 0),
+      asOf: today,
+    }),
+    [input, today],
+  )
+
   // One request per click, never retried: each spends about a cent on the
   // API's side and one of the reader's ten daily requests.
   const onExplain = async () => {
     if (!canExplain) return
+    // Resolved before the panel starts to wait: if the development preview
+    // cannot load, the click fails here and nothing is left pending.
+    const options =
+      import.meta.env.DEV && explainPreview ? (await explainPreview).previewOptions() : {}
     const seq = ++explainSeqRef.current
-    setExplainState({ status: 'pending' })
+    const startedAt = performance.now()
+    setExplainCue(false)
+    setExplainState({ status: 'pending', startedAt, slow: false })
     setExampleShown(false)
-    setExplainAnnouncement('')
-    const outcome = await explain(input, today)
+    // Marks the wait as long once it is. A reply or an edit that came first
+    // has already replaced this pending state, and the update finds nothing.
+    window.setTimeout(() => {
+      setExplainState((s) =>
+        s.status === 'pending' && s.startedAt === startedAt ? { ...s, slow: true } : s,
+      )
+    }, SLOW_AFTER_MS)
+    const outcome = await explain(input, today, options)
     if (seq !== explainSeqRef.current) return
-    const receivedAt = new Date()
-    setExplainState({ status: 'done', outcome, receivedAt })
-    setExplainAnnouncement(
-      outcome.kind === 'explanation' ? READY_ANNOUNCEMENT : messageFor(outcome, receivedAt),
-    )
+    setExplainState({
+      status: 'done',
+      outcome,
+      receivedAt: new Date(),
+      elapsedMs: performance.now() - startedAt,
+    })
   }
 
   const onShare = async () => {
@@ -277,15 +314,6 @@ export default function App() {
               <button type="button" className="btn-ghost" onClick={onReset}>
                 Reset
               </button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={onExplain}
-                aria-disabled={canExplain ? undefined : true}
-                aria-describedby={matured ? MATURED_HINT_ID : undefined}
-              >
-                {BUTTON_LABEL}
-              </button>
               <button type="button" className="btn-ghost" onClick={onShare}>
                 {shareState === 'copied' ? 'Link copied' : 'Share'}
               </button>
@@ -300,9 +328,6 @@ export default function App() {
               : shareState === 'failed'
                 ? 'Copying failed; the URL in the address bar already holds this scenario.'
                 : ''}
-          </p>
-          <p className="visually-hidden" role="status">
-            {explainAnnouncement}
           </p>
           {shareState === 'failed' && (
             <p className="notice">
@@ -327,6 +352,10 @@ export default function App() {
               />
               <ExplainPanel
                 state={explainState}
+                canExplain={canExplain}
+                onExplain={onExplain}
+                sent={sent}
+                cue={explainCue}
                 matured={matured}
                 rollover={input.rollover !== undefined}
                 exampleShown={exampleShown}

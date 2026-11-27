@@ -489,87 +489,215 @@
     margin-top: 0.35rem;
   }
 
-  /* The explanation panel sits on the page ground, like the warnings, but in
-     the muted register while it rests: the signal color stays with the
-     ceiling. While a request is in flight (aria-busy) it takes the warnings'
-     accent edge and a sweeping line along its top, so the wait reads as
-     activity and not as a stall. */
+  /* The explanation panel is the fourth readout: it sits on the page ground
+     inside the same two corner brackets as the readouts above it, at a larger
+     size, with no box. The brackets are the cursor of the whole flow: muted
+     at rest, accent and tracing the frame while a request is in flight,
+     locked in the accent around an answer, ink around a failure. One mark
+     carries the accent at a time: the button while pressing it is the next
+     thing to do, the frame once it has been pressed. */
   .explanation {
+    --frame: var(--muted);
     position: relative;
-    border: 1px solid var(--line);
-    border-radius: 2px;
-    padding: 0.9rem 1.1rem;
+    /* 0.9rem at the sides, as in .dataline: one text column with the readouts. */
+    padding: 1rem 0.9rem 1.1rem;
     margin-bottom: 1.75rem;
   }
-  .explanation[aria-busy='true'] {
-    border-left: 3px solid var(--accent);
-    overflow: hidden;
-  }
-  .explanation[aria-busy='true']::before {
+  .explanation::before,
+  .explanation::after {
     content: '';
     position: absolute;
+    width: 16px;
+    height: 16px;
+    /* While they trace, the brackets cover the panel: clicks pass through. */
+    pointer-events: none;
+  }
+  .explanation::before {
     top: 0;
     left: 0;
-    width: 25%;
-    height: 2px;
-    background: var(--accent);
+    border-top: 2px solid var(--frame);
+    border-left: 2px solid var(--frame);
   }
-  /* The body wraps what arrives (so it can fade in) and is always the last
-     child, so its own last child closes the panel the same way. */
-  .explanation > :last-child,
-  .explanation-body > :last-child {
-    margin-bottom: 0;
+  .explanation::after {
+    bottom: 0;
+    right: 0;
+    border-bottom: 2px solid var(--frame);
+    border-right: 2px solid var(--frame);
   }
-  .explanation-label {
+  .explanation[data-state='pending'],
+  .explanation[data-outcome='explanation'] {
+    --frame: var(--accent);
+  }
+  /* While it waits the panel holds the height of the shortest reply in the
+     API's stored run of 2026-11-27 (71 words, one rung), which measures
+     375.5px at desktop width: the frame is drawn at the size of what is
+     coming, and when the reply lands the page moves only by what that reply
+     needs beyond the shortest one. What was sent stays at the top and the
+     disclosure at the foot, where the reply's own first and last lines go. */
+  .explanation[data-state='pending'] {
+    min-height: 23rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .explanation[data-state='pending'] .explanation-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .explanation[data-state='pending'] .explanation-main > .notice:last-child {
+    margin-top: auto;
+  }
+  /* A failure is in the register of the form's field errors: ink, never signal. */
+  .explanation[data-state='done']:not([data-outcome='explanation']) {
+    --frame: var(--ink);
+  }
+  /* Label on the left, the action on the right, as in the results head. */
+  .explanation-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-bottom: 0.9rem;
+  }
+  .explanation-label,
+  .explanation-meta {
     font-family: var(--mono);
     font-size: 0.6875rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 0.4rem;
   }
-  /* The wait, in the warnings-label register. */
-  .explanation-pending {
+  .explanation-label {
+    margin-right: auto;
+  }
+  /* A unit is not a label: "4.8 s", not "4.8 S". */
+  .explanation-meta span {
+    text-transform: none;
+  }
+  /* The button is primary or ghost by state; its box is the same in both, so
+     the head does not move when the state changes. */
+  .explanation-head button {
+    padding: 0.55rem 1rem;
+  }
+  /* Whatever closes the panel, or a block inside it, closes it flush. */
+  .explanation-main > :last-child,
+  .explanation-body > :last-child,
+  .explanation-example > :last-child {
+    margin-bottom: 0;
+  }
+  /* What arrives, a reply or a failure. The disclosure may follow it. */
+  .explanation-body {
+    margin-bottom: 1rem;
+  }
+  .explanation-invite {
+    max-width: 62ch;
+    margin-bottom: 0.6rem;
+  }
+  /* The wait: what was sent and for how long, as two lines of a readout. */
+  .explanation-wire {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.4rem 1.1rem;
     font-family: var(--mono);
+    margin-bottom: 1rem;
+  }
+  .explanation-wire > div {
+    display: contents;
+  }
+  .explanation-wire dt {
     font-size: 0.6875rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 1rem;
+    color: var(--muted);
+  }
+  .explanation-wire dd {
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
   }
   /* SPEC §4's two section headers, rendered as headings under the h2 above. */
   .explanation h3 {
     font-family: var(--mono);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    margin: 1rem 0 0.4rem;
+    margin: 1.5rem 0 0.5rem;
+  }
+  .explanation-body > h3:first-child,
+  .explanation-example > .notice + h3 {
+    margin-top: 0;
   }
   .explanation-text,
   .explanation-list {
-    font-size: 0.9375rem;
     max-width: 62ch;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.7rem;
   }
+  /* A peso amount, in the face of the readouts above: the same glyphs, so the
+     figure in the sentence and the figure in the readout match by eye. */
+  .fig {
+    font-family: var(--mono);
+    font-size: 0.9375em;
+    white-space: nowrap;
+  }
+  /* A risk is a label and one sentence. The label is in ink: SPEC §4 keeps
+     the labels descriptive, and the signal color would make them a verdict. */
   .explanation-list {
     margin-top: 0;
-    padding-left: 1.1rem;
+    padding-left: 0;
+    list-style: none;
+  }
+  .explanation-list li {
+    padding-left: 0.9rem;
+    border-left: 1px solid var(--muted);
   }
   .explanation-list li + li {
-    margin-top: 0.35rem;
+    margin-top: 0.8rem;
+  }
+  .risk-label,
+  .explanation-failure {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .risk-label {
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+  /* The API writes a risk as "Label: sentence", and the sentence may open in
+     lower case. Under a label on its own line it is set with a capital; the
+     characters in the page are still the API's. */
+  .risk-text {
+    display: block;
+  }
+  .risk-text::first-letter {
+    text-transform: uppercase;
+  }
+  .explanation-note {
+    color: var(--muted);
+    font-size: 0.8125rem;
+    max-width: 62ch;
+    margin-top: 1.4rem;
+  }
+  .explanation-failure {
+    margin-bottom: 0.5rem;
   }
   /* Same register as the form's field errors: ink, never signal. */
   .explanation-error {
     color: var(--ink);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     padding-left: 0.6rem;
     border-left: 2px solid var(--ink);
     margin-bottom: 1rem;
     max-width: 62ch;
   }
-  .explanation .btn-ghost {
-    margin-bottom: 1rem;
+  /* Focus is sent to the example when it replaces its button, so a keyboard
+     or screen-reader user continues from it. It is a place to read from, not
+     a control, so it draws no ring. */
+  .explanation-example:focus-visible {
+    outline: none;
   }
 
   .entity-row {
@@ -730,8 +858,11 @@
     gap: 0.6rem;
     flex-wrap: wrap;
   }
-  /* The one primary action — the only place accent paints a surface. */
+  /* The one primary action — the only place accent paints a surface. Its two
+     brackets are the readouts' mark at the button's size: they close in on
+     hover, and when it is pressed the panel's own brackets take over. */
   .btn-primary {
+    position: relative;
     font-family: var(--mono);
     font-size: 0.8125rem;
     letter-spacing: 0.12em;
@@ -740,14 +871,51 @@
     background: var(--accent);
     border: 1px solid var(--accent);
     border-radius: 2px;
-    padding: 0.45rem 0.9rem;
+    padding: 0.55rem 1rem;
     cursor: pointer;
+  }
+  .btn-primary::before,
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    pointer-events: none;
+  }
+  .btn-primary::before {
+    top: -6px;
+    left: -6px;
+    border-top: 1.5px solid var(--accent);
+    border-left: 1.5px solid var(--accent);
+  }
+  .btn-primary::after {
+    bottom: -6px;
+    right: -6px;
+    border-bottom: 1.5px solid var(--accent);
+    border-right: 1.5px solid var(--accent);
   }
   .btn-primary:not([aria-disabled='true']):hover {
     opacity: 0.92;
   }
+  .btn-primary:not([aria-disabled='true']):hover::before {
+    transform: translate(3px, 3px);
+  }
+  .btn-primary:not([aria-disabled='true']):hover::after {
+    transform: translate(-3px, -3px);
+  }
   .btn-primary:focus-visible {
     outline-color: var(--ink);
+  }
+  /* The focus ring is the mark while it shows. The brackets are hidden, not
+     removed: removing them would start the idle cue over when focus leaves. */
+  .btn-primary:focus-visible::before,
+  .btn-primary:focus-visible::after {
+    visibility: hidden;
+  }
+  /* An inert button has no mark. */
+  .btn-primary[aria-disabled='true']::before,
+  .btn-primary[aria-disabled='true']::after {
+    display: none;
   }
   .btn-primary:disabled,
   .btn-primary[aria-disabled='true'] {
@@ -791,27 +959,100 @@
   .ladder .m-tick {
     transition: x 0.2s ease-out;
   }
-  /* Indeterminate: the segment is a quarter of the panel wide, so a travel
-     of five widths takes it from fully outside the left edge to fully
-     outside the right. */
-  .explanation[aria-busy='true']::before {
-    animation: explanation-sweep 1.4s ease-in-out infinite;
+  /* Every animation below starts from, or returns to, the element's own
+     resting style, so with motion reduced (the block that closes this layer)
+     each one leaves its finished state: brackets at their corners in the
+     state's color, the text in place. */
+
+  /* The wait, indeterminate: both brackets run along the panel's edges until
+     the frame closes, then draw back to their corners, for as long as the
+     request is in flight. It measures nothing. */
+  .explanation[data-state='pending']::before,
+  .explanation[data-state='pending']::after {
+    animation: frame-trace 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
   }
-  @keyframes explanation-sweep {
-    from {
-      transform: translateX(-100%);
-    }
+  @keyframes frame-trace {
     to {
-      transform: translateX(500%);
+      width: 100%;
+      height: 100%;
     }
   }
-  /* The explanation arrives: opacity only, so nothing moves. */
-  .explanation-body {
-    animation: explanation-arrive 0.25s ease-out;
+  /* The reply lands: the frame is whole for an instant and opens to its
+     corners, whatever point of the trace it was at. */
+  .explanation[data-state='done']::before,
+  .explanation[data-state='done']::after {
+    animation: frame-lock 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  @keyframes explanation-arrive {
+  @keyframes frame-lock {
+    from {
+      width: 100%;
+      height: 100%;
+    }
+  }
+  /* The reply arrives whole and is shown whole: its blocks rise a few pixels
+     one after another, and the last has landed 0.52 s after the first starts. */
+  .explanation-body > * {
+    animation: explanation-rise 0.32s ease-out backwards;
+  }
+  .explanation-body > :nth-child(2) {
+    animation-delay: 0.04s;
+  }
+  .explanation-body > :nth-child(3) {
+    animation-delay: 0.08s;
+  }
+  .explanation-body > :nth-child(4) {
+    animation-delay: 0.12s;
+  }
+  .explanation-body > :nth-child(5) {
+    animation-delay: 0.16s;
+  }
+  .explanation-body > :nth-child(n + 6) {
+    animation-delay: 0.2s;
+  }
+  @keyframes explanation-rise {
     from {
       opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  .btn-primary::before,
+  .btn-primary::after {
+    transition: transform 0.15s ease-out;
+  }
+  /* The idle cue: the button's brackets close in and release, as on hover,
+     1 s after load and twice more 12 s apart. App drops data-cue at the
+     first click of a visit, or 37 s into it (CUE_WINDOW_MS, this rule's own
+     length), so a button that is drawn again later does not play it again.
+     It moves `translate`, not `transform`, so the hover rule above still
+     answers while it runs. */
+  .btn-primary[data-cue]::before {
+    animation: cue-close-in 12s ease-in-out 1s 3;
+  }
+  .btn-primary[data-cue]::after {
+    animation: cue-close-out 12s ease-in-out 1s 3;
+  }
+  @keyframes cue-close-in {
+    2%,
+    6% {
+      translate: 3px 3px;
+    }
+    0%,
+    4%,
+    8%,
+    100% {
+      translate: none;
+    }
+  }
+  @keyframes cue-close-out {
+    2%,
+    6% {
+      translate: -3px -3px;
+    }
+    0%,
+    4%,
+    8%,
+    100% {
+      translate: none;
     }
   }
   @media (prefers-reduced-motion: reduce) {
