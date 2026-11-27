@@ -18,7 +18,7 @@ interface Props {
 interface FieldProps {
   id: keyof FormState
   label: string
-  hint?: string
+  hint?: ReactNode
   error?: ValidationIssue
   children: (describedBy: string | undefined, invalid: boolean) => ReactNode
 }
@@ -74,14 +74,14 @@ function EntityList({
 
   return (
     <fieldset>
-      <legend>Entidades</legend>
+      <legend>Institutions</legend>
       {entities.map((e, i) => {
         const error = entityErrors[i]
         return (
           <div className="field" key={e.id}>
             <div className="entity-row">
               <label className="visually-hidden" htmlFor={`entity-${e.id}`}>
-                Nombre de la entidad {i + 1}
+                Name of institution {i + 1}
               </label>
               <input
                 id={`entity-${e.id}`}
@@ -103,7 +103,7 @@ function EntityList({
                 className="btn-remove"
                 onClick={() => removeWithFocus(e.id, i)}
                 disabled={entities.length <= 1}
-                aria-label={`Quitar ${e.name.trim() || `entidad ${i + 1}`}`}
+                aria-label={`Remove ${e.name.trim() || `institution ${i + 1}`}`}
               >
                 ×
               </button>
@@ -127,7 +127,7 @@ function EntityList({
           if (!atMax) onEntityAdd()
         }}
       >
-        Agregar entidad
+        Add institution
       </button>
     </fieldset>
   )
@@ -149,11 +149,11 @@ function AllocationList({
   }
   return (
     <fieldset>
-      <legend>Asignación de peldaños</legend>
+      <legend>Rung allocation</legend>
       {Array.from({ length: count }, (_, i) => (
         <div className="alloc-row" key={i}>
           <label className="alloc-label" htmlFor={`alloc-${i}`}>
-            Peldaño {String(i + 1).padStart(2, '0')}
+            Rung {String(i + 1).padStart(2, '0')}
           </label>
           <select
             id={`alloc-${i}`}
@@ -204,13 +204,13 @@ export function ScenarioForm({
   return (
     <form aria-labelledby="h-params" onSubmit={(e) => e.preventDefault()}>
       <h2 className="section-label" id="h-params">
-        Parámetros
+        Parameters
       </h2>
 
       <fieldset>
-        <legend>Escalera</legend>
+        <legend>Ladder</legend>
 
-        <Field id="capital" label="Capital total (COP)" error={errors.capital}>
+        <Field id="capital" label="Total principal (COP)" error={errors.capital}>
           {(describedBy, invalid) => (
             <input
               id="capital"
@@ -226,8 +226,8 @@ export function ScenarioForm({
 
         <Field
           id="rungCount"
-          label="Número de peldaños"
-          hint="Más de 1 divide el capital en peldaños que vencen escalonados: la liquidez y la oportunidad de tomar la tasa vigente llegan por partes, no todas a la vez. Reparte el riesgo de reinversión; no aumenta el rendimiento."
+          label="Number of rungs"
+          hint="More than 1 splits the principal into rungs that mature one after another: cash and the chance to take the prevailing rate arrive in parts, not all at once. It spreads reinvestment risk; it does not raise the return."
           error={errors.rungCount}
         >
           {(describedBy, invalid) => (
@@ -245,8 +245,8 @@ export function ScenarioForm({
 
         <Field
           id="spacingDays"
-          label="Días entre vencimientos"
-          hint="Cada peldaño vence este número de días después del anterior."
+          label="Days between maturities"
+          hint="Each rung matures this many days after the one before."
           error={errors.spacingDays}
         >
           {(describedBy, invalid) => (
@@ -264,8 +264,8 @@ export function ScenarioForm({
 
         <Field
           id="ea"
-          label="Tasa E.A. (%)"
-          hint="El valor inicial es un ejemplo — la herramienta no consulta tasas de mercado; usa la que te ofrezca la entidad."
+          label="E.A. rate (%)"
+          hint="E.A. is the effective annual rate. The starting value is an example — the tool does not look up market rates; use the one your institution offers."
           error={errors.ea}
         >
           {(describedBy, invalid) => (
@@ -293,12 +293,12 @@ export function ScenarioForm({
       <AllocationList form={form} onAllocate={onAllocate} />
 
       <fieldset>
-        <legend>Renovación (proyección)</legend>
+        <legend>Renewal (projection)</legend>
 
         <Field
           id="rolloverMode"
-          label="Renovar al vencimiento"
-          hint="Reinvierte capital más interés neto a la misma tasa. Las renovaciones reales se pactan a la tasa vigente."
+          label="Renew at maturity"
+          hint="Reinvests principal plus net interest at the same rate. Real renewals are agreed at the rate prevailing then."
         >
           {(describedBy) => (
             <select
@@ -307,15 +307,15 @@ export function ScenarioForm({
               onChange={(e) => onChange('rolloverMode', e.target.value)}
               aria-describedby={describedBy}
             >
-              <option value="off">Sin renovación</option>
-              <option value="cycles">Número de renovaciones</option>
-              <option value="horizon">Hasta una fecha</option>
+              <option value="off">No renewal</option>
+              <option value="cycles">Number of renewals</option>
+              <option value="horizon">Until a date</option>
             </select>
           )}
         </Field>
 
         {form.rolloverMode === 'cycles' && (
-          <Field id="rolloverCycles" label="Renovaciones" error={errors.rolloverCycles}>
+          <Field id="rolloverCycles" label="Renewals" error={errors.rolloverCycles}>
             {(describedBy, invalid) => (
               <input
                 id="rolloverCycles"
@@ -333,8 +333,8 @@ export function ScenarioForm({
         {form.rolloverMode === 'horizon' && (
           <Field
             id="rolloverHorizon"
-            label="Horizonte"
-            hint="Si cae a mitad de un plazo, el último tramo se proyecta a prorrata de la misma tasa; un CDT real no se pacta por menos de 30 días."
+            label="Horizon"
+            hint="If it falls partway through a term, the last stretch is projected pro rata at the same rate; a real CDT is not issued for less than 30 days."
             error={errors.rolloverHorizon}
           >
             {(describedBy, invalid) => (
@@ -356,9 +356,9 @@ export function ScenarioForm({
         open={advancedOpen}
         onToggle={(e) => setAdvancedOpen((e.target as HTMLDetailsElement).open)}
       >
-        <summary>Ajustes avanzados</summary>
+        <summary>Advanced settings</summary>
         <div className="advanced-body">
-          <Field id="startDate" label="Fecha de inicio" error={errors.startDate}>
+          <Field id="startDate" label="Start date" error={errors.startDate}>
             {(describedBy, invalid) => (
               <input
                 id="startDate"
@@ -372,12 +372,17 @@ export function ScenarioForm({
           </Field>
 
           <fieldset>
-            <legend>Liquidación, retención y seguro</legend>
+            <legend>Day count, withholding and insurance</legend>
 
             <Field
               id="dayCountBase"
-              label="Base de liquidación"
-              hint="Aparece en tu constancia como 'Base liquidación'. Varía según la entidad: cópiala de tu constancia."
+              label="Day-count basis"
+              hint={
+                <>
+                  Printed on your CDT certificate as '<span lang="es">Base liquidación</span>'. It
+                  varies by institution: copy it from your certificate.
+                </>
+              }
               error={errors.dayCountBase}
             >
               {(describedBy, invalid) => (
@@ -388,7 +393,7 @@ export function ScenarioForm({
                   aria-describedby={describedBy}
                   aria-invalid={invalid || undefined}
                 >
-                  <option value="360">360 comercial</option>
+                  <option value="360">360 (commercial year)</option>
                   <option value="365">365</option>
                 </select>
               )}
@@ -396,8 +401,13 @@ export function ScenarioForm({
 
             <Field
               id="retencion"
-              label="Retención en la fuente (%)"
-              hint="Sobre los intereses. Verifica la tarifa vigente."
+              label="Withholding tax (%)"
+              hint={
+                <>
+                  <span lang="es">Retención en la fuente</span>, withheld from the interest. Check the
+                  current rate.
+                </>
+              }
               error={errors.retencion}
             >
               {(describedBy, invalid) => (
@@ -415,8 +425,8 @@ export function ScenarioForm({
 
             <Field
               id="ceiling"
-              label="Tope del seguro de depósitos (COP)"
-              hint="Por depositante y por entidad (bancos: Fogafín; cooperativas: Fogacoop). Verifica la cobertura vigente."
+              label="Deposit-insurance ceiling (COP)"
+              hint="Per depositor and per institution (banks: Fogafín; cooperatives: Fogacoop). Check the current coverage."
               error={errors.ceiling}
             >
               {(describedBy, invalid) => (

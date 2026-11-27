@@ -1,4 +1,4 @@
-import { dayNumber, formatCOP, formatDateShort, MONTHS_ES, parseISODate, toISODate } from '../engine'
+import { dayNumber, formatCOP, formatDateShort, MONTHS_SHORT, parseISODate, toISODate } from '../engine'
 import type { ISODate, RungProjection, RungResult } from '../engine'
 import { useContainerWidth } from '../ui/useContainerWidth'
 
@@ -36,7 +36,7 @@ function monthTicks(startDay: number, endDay: number, innerW: number): Tick[] {
   for (;;) {
     const day = dayNumber(toISODate({ y, m, d: 1 }))
     if (day > endDay) break
-    all.push({ day, label: m === 1 ? `${MONTHS_ES[m - 1]} ${String(y).slice(2)}` : MONTHS_ES[m - 1] })
+    all.push({ day, label: m === 1 ? `${MONTHS_SHORT[m - 1]} ${String(y).slice(2)}` : MONTHS_SHORT[m - 1] })
     m += 1
     if (m > 12) {
       m = 1
@@ -71,13 +71,13 @@ export function LadderChart({ rungs, startDate, today, projections }: Props) {
   const first = rungs[0]
   const last = rungs[rungs.length - 1]
   const label =
-    `Línea de tiempo de ${rungs.length} CDT desde ${formatDateShort(startDate)}. ` +
-    `Primer vencimiento ${formatDateShort(first.maturityDate)}, último ${formatDateShort(last.maturityDate)}. ` +
+    `Timeline of ${rungs.length} ${rungs.length === 1 ? 'CDT' : 'CDTs'} from ${formatDateShort(startDate)}. ` +
+    `First maturity ${formatDateShort(first.maturityDate)}, last ${formatDateShort(last.maturityDate)}. ` +
     (projections && projections.length > 0
-      ? `Incluye renovaciones proyectadas hasta ${formatDateShort(
+      ? `Includes projected renewals through ${formatDateShort(
           rungs.reduce((max, r) => (chainEnd(r) > max ? chainEnd(r) : max), first.maturityDate),
-        )}. El detalle está en las tablas Calendario de vencimientos y Proyección de renovación.`
-      : 'El detalle está en la tabla Calendario de vencimientos.')
+        )}. Details are in the Maturity schedule and Renewal projection tables.`
+      : 'Details are in the Maturity schedule table.')
 
   return (
     <div ref={ref} className="ladder-wrap">
@@ -113,8 +113,8 @@ export function LadderChart({ rungs, startDate, today, projections }: Props) {
           // Beyond a year, day+month alone would repeat identically across years.
           const dateLabel =
             dEnd - d0 > 366
-              ? `${d} ${MONTHS_ES[m - 1]} ${String(y).slice(2)}`
-              : `${d} ${MONTHS_ES[m - 1]}`
+              ? `${d} ${MONTHS_SHORT[m - 1]} ${String(y).slice(2)}`
+              : `${d} ${MONTHS_SHORT[m - 1]}`
           const amountLabel = `${formatCOP(r.principal)} · ${r.days} d`
           const amountFits = barW > amountLabel.length * CHAR_W + 16
           const dateOutsideFits = chainX + 8 + dateLabel.length * CHAR_W < width - M_RIGHT
@@ -168,7 +168,7 @@ export function LadderChart({ rungs, startDate, today, projections }: Props) {
           <g>
             <line className="today-line" x1={x(todayDay)} y1={M_TOP - 6} x2={x(todayDay)} y2={axisY} />
             <text className="today-label" x={x(todayDay) + 5} y={M_TOP - 8}>
-              hoy
+              today
             </text>
           </g>
         )}
@@ -176,14 +176,14 @@ export function LadderChart({ rungs, startDate, today, projections }: Props) {
       {projections && projections.length > 0 && (
         <p className="chart-legend">
           <span>
-            <span className="sw sw-initial" aria-hidden="true" /> plazo inicial
+            <span className="sw sw-initial" aria-hidden="true" /> initial term
           </span>
           <span>
-            <span className="sw sw-renewal" aria-hidden="true" /> renovación proyectada
+            <span className="sw sw-renewal" aria-hidden="true" /> projected renewal
           </span>
           {projections.some((p) => p.hasStub) && (
             <span>
-              <span className="sw sw-stub" aria-hidden="true" /> renovación parcial
+              <span className="sw sw-stub" aria-hidden="true" /> partial renewal
             </span>
           )}
         </p>

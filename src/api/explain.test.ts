@@ -9,6 +9,7 @@ import {
   UPSTREAM_MESSAGE,
 } from './explain'
 import type { ScenarioInput } from '../engine'
+import { buildScenario, initialForm } from '../ui/form'
 
 /** Rollover on, so the builder's omission of it is what the shape tests check. */
 function input(): ScenarioInput {
@@ -71,6 +72,36 @@ describe('EXPLAIN_URL', () => {
   })
 })
 
+describe('SPEC 2.0 §7 fixed strings', () => {
+  it('are the English texts, byte for byte', () => {
+    expect(ERROR_MESSAGE).toBe('I cannot explain this ladder: the data received is not valid.')
+    expect(UPSTREAM_MESSAGE).toBe(
+      'I cannot explain this ladder right now: the service is unavailable.',
+    )
+    expect(LIMIT_MESSAGE).toBe(
+      'I cannot explain this ladder for now: the daily request limit has been reached.',
+    )
+  })
+})
+
+describe('buildExplainRequest — the default form', () => {
+  it('sends the same numbers as before the UI moved to English; only the default name is new', () => {
+    const form = initialForm()
+    const { input: scenario, issues } = buildScenario(form)
+    expect(issues).toEqual([])
+    expect(buildExplainRequest(scenario, form.startDate)).toEqual({
+      asOfDate: form.startDate,
+      ladder: {
+        startDate: form.startDate,
+        dayCountBase: 360,
+        fiscal: { retencionRate: 0.04, insuranceCeiling: 50_000_000 },
+        entities: [{ id: 'e1', name: 'Institution A' }],
+        rungs: [{ id: 'r1', principal: 40_000_000, days: 90, ea: 0.1, entityId: 'e1' }],
+      },
+    })
+  })
+})
+
 describe('buildExplainRequest — SPEC §2.2 shape', () => {
   it('carries asOfDate and the ladder, and nothing else', () => {
     const req = buildExplainRequest(input(), '2027-01-04')
@@ -119,10 +150,10 @@ describe('explain — the call', () => {
 
 describe('explain — outcomes', () => {
   it('200 with text → explanation', async () => {
-    const { fetchFn } = replying(200, { text: 'Qué pasa y cuándo\n\nHola.\n\nRiesgos\n\nSin riesgos.' })
+    const { fetchFn } = replying(200, { text: 'What happens and when\n\nHello.\n\nRisks\n\nNo risks.' })
     expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({
       kind: 'explanation',
-      text: 'Qué pasa y cuándo\n\nHola.\n\nRiesgos\n\nSin riesgos.',
+      text: 'What happens and when\n\nHello.\n\nRisks\n\nNo risks.',
     })
   })
 
@@ -225,14 +256,14 @@ describe('explain — outcomes', () => {
             source: 'engine',
             code: 'principal_invalid',
             path: 'rungs[0].principal',
-            message: 'El monto debe ser un entero en pesos, mayor que cero.',
+            message: 'The amount must be a whole number of pesos, greater than zero.',
           },
         ],
       },
     })
     expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({
       kind: 'invalid',
-      issue: 'El monto debe ser un entero en pesos, mayor que cero.',
+      issue: 'The amount must be a whole number of pesos, greater than zero.',
       text: ERROR_MESSAGE,
     })
   })
@@ -244,13 +275,13 @@ describe('explain — outcomes', () => {
         code: 'invalid_input',
         issues: [
           { source: 'schema', keyword: 'required', path: '/ladder/rungs/0/ea' },
-          { source: 'api', code: 'as_of_date_invalid', path: 'asOfDate', message: 'Fecha inválida.' },
+          { source: 'api', code: 'as_of_date_invalid', path: 'asOfDate', message: 'The as-of date is not valid.' },
         ],
       },
     })
     expect(await explain(input(), '2027-01-04', { fetch: fetchFn })).toEqual({
       kind: 'invalid',
-      issue: 'Fecha inválida.',
+      issue: 'The as-of date is not valid.',
       text: ERROR_MESSAGE,
     })
   })

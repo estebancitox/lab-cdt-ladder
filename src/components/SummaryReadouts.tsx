@@ -15,41 +15,41 @@ export function SummaryReadouts({ result, today, horizonBeforeFinal }: Props) {
   return (
     <dl className="readouts">
       <div className="dataline">
-        <dt>Tasa ponderada</dt>
+        <dt>Blended rate</dt>
         <dd className="value">{formatPercent(result.blendedEA)} E.A.</dd>
-        <dd className="hint">ponderada por capital × días</dd>
+        <dd className="hint">weighted by principal × days</dd>
       </div>
       <div className="dataline">
         {/* With a projection alongside, "total" must not attach to the smaller
             of two totals — the label itself carries the scope. */}
-        <dt>{projection ? 'Interés neto (plazos iniciales)' : 'Interés neto total'}</dt>
+        <dt>{projection ? 'Net interest (initial terms)' : 'Total net interest'}</dt>
         <dd className="value">{formatCOP(result.totals.netInterest)}</dd>
-        <dd className="hint">después de retención en la fuente</dd>
+        <dd className="hint">after withholding tax</dd>
       </div>
       {projection && (
         <div className="dataline">
-          <dt>Valor proyectado</dt>
+          <dt>Projected value</dt>
           <dd className="value">{formatCOP(projection.totalFinalValue)}</dd>
           <dd className="hint">
             {horizonBeforeFinal
-              ? `al ${formatDateShort(projection.finalMaturity)} — tu horizonte cae antes del último vencimiento`
-              : `al ${formatDateShort(projection.finalMaturity)}`}
+              ? `on ${formatDateShort(projection.finalMaturity)} — your horizon falls before the last maturity`
+              : `on ${formatDateShort(projection.finalMaturity)}`}
           </dd>
         </div>
       )}
       <div className="dataline">
-        <dt>Próximo vencimiento</dt>
+        <dt>Next maturity</dt>
         <dd className="value">{next ? formatDateShort(next) : '—'}</dd>
         <dd className="hint">
           {daysToNext === null
-            ? 'sin peldaños'
+            ? 'no rungs'
             : daysToNext === 0
-              ? 'hoy'
+              ? 'today'
               : daysToNext === 1
-                ? 'en 1 día'
+                ? 'in 1 day'
                 : daysToNext > 1
-                  ? `en ${daysToNext} días`
-                  : 'ya venció'}
+                  ? `in ${daysToNext} days`
+                  : 'already matured'}
         </dd>
       </div>
     </dl>

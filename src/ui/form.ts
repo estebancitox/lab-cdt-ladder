@@ -17,7 +17,7 @@ export const MAX_RUNGS = 12
 
 /** Blank names never block the math — they render under a generic fallback. */
 export function entityDisplayName(name: string, index: number): string {
-  return name.trim() || `Entidad ${index + 1}`
+  return name.trim() || `Institution ${index + 1}`
 }
 
 export type RolloverMode = 'off' | 'cycles' | 'horizon'
@@ -49,9 +49,9 @@ export function todayISO(): ISODate {
 export function initialForm(): FormState {
   return {
     // Under the default 50M insurance ceiling with room for interest: the
-    // pristine first paint must not open on a TOPE SUPERADO alarm about
+    // pristine first paint must not open on a CEILING EXCEEDED alarm about
     // parameters the user has not chosen yet.
-    capital: '40.000.000',
+    capital: '40,000,000',
     // 1, not a pre-built ladder: people hold one CDT and decide at maturity.
     // The rung-count hint explains what raising it does.
     rungCount: '1',
@@ -59,11 +59,11 @@ export function initialForm(): FormState {
     ea: '10',
     dayCountBase: '360',
     retencion: '4',
-    // Editable default, labeled "verifica la cobertura vigente" in the UI —
+    // Editable default, labeled "Check the current coverage" in the UI —
     // never presented as current truth.
-    ceiling: '50.000.000',
+    ceiling: '50,000,000',
     startDate: todayISO(),
-    entities: [{ id: 'e1', name: 'Entidad A' }],
+    entities: [{ id: 'e1', name: 'Institution A' }],
     allocation: [],
     nextEntitySeq: 2,
     rolloverMode: 'off',
@@ -72,10 +72,10 @@ export function initialForm(): FormState {
   }
 }
 
-const groupFormatter = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 })
+const groupFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 
 /**
- * Group a digits-only string with es-CO dots as the user types. Capped at 12
+ * Group a digits-only string with en-US commas as the user types. Capped at 12
  * digits: the worst legal case (12 digits × E.A. 100 % × 3650 days) still
  * yields a safe-integer gross; 13+ digits would silently lose pesos.
  */
@@ -120,7 +120,7 @@ export function buildScenario(form: FormState): ParsedForm {
     issues.push({
       code: 'capital_invalid',
       path: 'form.capital',
-      message: 'Escribe el capital total en pesos, mayor que cero.',
+      message: 'Enter the total principal in pesos, greater than zero.',
     })
   }
 
@@ -129,7 +129,7 @@ export function buildScenario(form: FormState): ParsedForm {
     issues.push({
       code: 'count_invalid',
       path: 'form.rungCount',
-      message: `Entre 1 y ${MAX_RUNGS} peldaños.`,
+      message: `Between 1 and ${MAX_RUNGS} rungs.`,
     })
   }
 
@@ -138,13 +138,13 @@ export function buildScenario(form: FormState): ParsedForm {
     issues.push({
       code: 'spacing_invalid',
       path: 'form.spacingDays',
-      message: 'Los días entre vencimientos deben ser un número entero, mayor que cero.',
+      message: 'The days between maturities must be a whole number, greater than zero.',
     })
   } else if (count !== null && count >= 1 && count <= MAX_RUNGS && spacing * count > 3650) {
     issues.push({
       code: 'spacing_too_long',
       path: 'form.spacingDays',
-      message: 'El último vencimiento no puede pasar de 10 años.',
+      message: 'The last maturity cannot be more than 10 years after the start date.',
     })
   }
 
@@ -153,7 +153,7 @@ export function buildScenario(form: FormState): ParsedForm {
     issues.push({
       code: 'ea_invalid',
       path: 'form.ea',
-      message: 'La tasa E.A. debe estar entre 0 % y 100 %.',
+      message: 'The E.A. rate must be between 0% and 100%.',
     })
   }
 
@@ -163,7 +163,7 @@ export function buildScenario(form: FormState): ParsedForm {
     issues.push({
       code: 'base_invalid',
       path: 'form.dayCountBase',
-      message: 'La base de liquidación debe ser 360 o 365.',
+      message: 'The day-count basis must be 360 or 365.',
     })
   }
 
@@ -172,7 +172,7 @@ export function buildScenario(form: FormState): ParsedForm {
     issues.push({
       code: 'retencion_invalid',
       path: 'form.retencion',
-      message: 'La retención debe ser de 0 % o más y menor que 100 %.',
+      message: 'The withholding tax must be 0% or more and less than 100%.',
     })
   }
 
@@ -181,7 +181,7 @@ export function buildScenario(form: FormState): ParsedForm {
     issues.push({
       code: 'ceiling_invalid',
       path: 'form.ceiling',
-      message: 'Escribe el tope del seguro en pesos, cero o mayor.',
+      message: 'Enter the deposit-insurance ceiling in pesos, zero or greater.',
     })
   }
 
@@ -192,7 +192,7 @@ export function buildScenario(form: FormState): ParsedForm {
     issues.push({
       code: 'start_date_invalid',
       path: 'form.startDate',
-      message: 'La fecha de inicio no es válida.',
+      message: 'The start date is not valid.',
     })
     startDate = todayISO()
   }
@@ -204,7 +204,7 @@ export function buildScenario(form: FormState): ParsedForm {
       issues.push({
         code: 'rollover_cycles_invalid',
         path: 'form.rolloverCycles',
-        message: 'Entre 1 y 36 renovaciones.',
+        message: 'Between 1 and 36 renewals.',
       })
     } else {
       // Same 20-year ceiling the horizon mode enforces: 36 renewals of a long
@@ -214,7 +214,7 @@ export function buildScenario(form: FormState): ParsedForm {
         issues.push({
           code: 'rollover_cycles_too_far',
           path: 'form.rolloverCycles',
-          message: 'La proyección no puede pasar de 20 años: reduce las renovaciones o el plazo.',
+          message: 'The projection cannot go beyond 20 years: reduce the renewals or the term.',
         })
       } else {
         rollover = { mode: 'cycles', cycles }
@@ -229,7 +229,7 @@ export function buildScenario(form: FormState): ParsedForm {
       issues.push({
         code: 'rollover_horizon_invalid',
         path: 'form.rolloverHorizon',
-        message: 'La fecha del horizonte no es válida.',
+        message: 'The horizon date is not valid.',
       })
     }
     if (horizonOk) {
@@ -237,13 +237,13 @@ export function buildScenario(form: FormState): ParsedForm {
         issues.push({
           code: 'rollover_horizon_before_start',
           path: 'form.rolloverHorizon',
-          message: 'El horizonte debe ser posterior a la fecha de inicio.',
+          message: 'The horizon must be after the start date.',
         })
       } else if (form.rolloverHorizon > addDays(startDate, 7300)) {
         issues.push({
           code: 'rollover_horizon_too_far',
           path: 'form.rolloverHorizon',
-          message: 'La proyección no puede pasar de 20 años.',
+          message: 'The projection cannot go beyond 20 years.',
         })
       } else if (
         spacing !== null &&
@@ -255,7 +255,7 @@ export function buildScenario(form: FormState): ParsedForm {
           code: 'rollover_too_many_cycles',
           path: 'form.rolloverHorizon',
           message:
-            'Demasiadas renovaciones para ese horizonte: acércalo o sube los días entre vencimientos.',
+            'Too many renewals for that horizon: bring it closer or raise the days between maturities.',
         })
       } else {
         rollover = { mode: 'horizon', horizonDate: form.rolloverHorizon }
@@ -264,7 +264,7 @@ export function buildScenario(form: FormState): ParsedForm {
   }
 
   const rawEntities =
-    form.entities.length > 0 ? form.entities : [{ id: 'e1', name: 'Entidad A' }]
+    form.entities.length > 0 ? form.entities : [{ id: 'e1', name: 'Institution A' }]
   const entities = rawEntities.map((e, i) => ({ id: e.id, name: entityDisplayName(e.name, i) }))
 
   if (issues.length > 0) {
@@ -335,7 +335,7 @@ export function entitySoftIssues(form: FormState): Record<number, ValidationIssu
       out[i] = {
         code: 'entity_name_empty',
         path: `entities[${i}].name`,
-        message: 'Ponle un nombre a la entidad.',
+        message: 'Give the institution a name.',
       }
       return
     }
@@ -345,7 +345,7 @@ export function entitySoftIssues(form: FormState): Record<number, ValidationIssu
         code: 'entity_name_duplicate',
         path: `entities[${i}].name`,
         message:
-          'Hay otra entidad con el mismo nombre. El tope del seguro se evalúa por entidad: si son la misma institución, usa una sola.',
+          'Another institution has the same name. The deposit-insurance ceiling is evaluated per institution: if they are the same one, keep a single entry.',
       }
     } else {
       seen.add(key)

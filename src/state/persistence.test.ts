@@ -19,11 +19,11 @@ function stubSearch(search: string): void {
 }
 
 function saved(): FormState {
-  return { ...initialForm(), capital: '777.000.000', rungCount: '3' }
+  return { ...initialForm(), capital: '777,000,000', rungCount: '3' }
 }
 
 function shared(): FormState {
-  return { ...initialForm(), capital: '111.000.000', rungCount: '2' }
+  return { ...initialForm(), capital: '111,000,000', rungCount: '2' }
 }
 
 describe('initialFormState — precedence and reported source', () => {
@@ -43,7 +43,15 @@ describe('initialFormState — precedence and reported source', () => {
     saveForm(saved())
     const s = initialFormState()
     expect(s.source).toBe('storage')
-    expect(s.form.capital).toBe('777.000.000')
+    expect(s.form.capital).toBe('777,000,000')
+  })
+
+  it('a scenario stored with es-CO dots, before the UI moved to English, still loads', () => {
+    saveForm({ ...initialForm(), capital: '777.000.000', rungCount: '3' })
+    const s = initialFormState()
+    expect(s.source).toBe('storage')
+    expect(s.form.capital).toBe('777,000,000')
+    expect(s.form.rungCount).toBe('3')
   })
 
   it('a valid link outranks the saved scenario', () => {
@@ -52,7 +60,7 @@ describe('initialFormState — precedence and reported source', () => {
     const s = initialFormState()
     expect(s.source).toBe('url')
     expect(s.urlWasBad).toBe(false)
-    expect(s.form.capital).toBe('111.000.000')
+    expect(s.form.capital).toBe('111,000,000')
   })
 
   it('an unreadable link never clobbers the saved scenario', () => {
@@ -61,7 +69,7 @@ describe('initialFormState — precedence and reported source', () => {
     const s = initialFormState()
     expect(s.source).toBe('storage')
     expect(s.urlWasBad).toBe(true)
-    expect(s.form.capital).toBe('777.000.000')
+    expect(s.form.capital).toBe('777,000,000')
   })
 
   it('reports defaults — not storage — when an unreadable link meets an empty store', () => {

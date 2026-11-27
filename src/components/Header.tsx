@@ -6,7 +6,7 @@ interface Props {
 }
 
 export function Header({ theme, onToggle }: Props) {
-  const next = theme === 'dark' ? 'claro' : 'oscuro'
+  const next = theme === 'dark' ? 'light' : 'dark'
   return (
     <header className="site-head">
       <a className="wordmark" href="https://estebancitox.github.io/">
@@ -16,7 +16,7 @@ export function Header({ theme, onToggle }: Props) {
         type="button"
         className="theme-toggle"
         onClick={onToggle}
-        aria-label={`Cambiar a tema ${next}`}
+        aria-label={`Switch to the ${next} theme`}
       >
         {next}
       </button>

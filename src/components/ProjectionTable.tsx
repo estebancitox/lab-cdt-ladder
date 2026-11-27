@@ -9,22 +9,22 @@ export function ProjectionTable({ projection }: Props) {
   return (
     <div className="table-scroll">
       <table className="schedule">
-        <caption>Proyección de renovación (misma tasa E.A.)</caption>
+        <caption>Renewal projection (same E.A. rate)</caption>
         <thead>
           <tr>
             <th scope="col">
               <span aria-hidden="true">#</span>
-              <span className="visually-hidden">Peldaño</span>
+              <span className="visually-hidden">Rung</span>
             </th>
             <th scope="col" className="num">
-              Renovaciones
+              Renewals
             </th>
-            <th scope="col">Vencimiento final</th>
+            <th scope="col">Final maturity</th>
             <th scope="col" className="num">
-              Interés neto acumulado
+              Cumulative net interest
             </th>
             <th scope="col" className="num">
-              Valor final
+              Final value
             </th>
           </tr>
         </thead>
@@ -34,7 +34,7 @@ export function ProjectionTable({ projection }: Props) {
               <th scope="row">{String(i + 1).padStart(2, '0')}</th>
               <td className="num">
                 {p.cycles.length}
-                {p.hasStub ? ' (última parcial)' : ''}
+                {p.hasStub ? ' (last one partial)' : ''}
               </td>
               <td>{formatDateShort(p.finalMaturity)}</td>
               <td className="num">{formatCOP(p.cumulativeNet)}</td>

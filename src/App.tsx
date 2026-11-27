@@ -113,16 +113,16 @@ export default function App() {
     const exceeded = result.exposures.filter((e) => e.exceeded).length
     const t = setTimeout(() => {
       setAnnouncement(
-        `Interés neto total ${result.projection ? 'de los plazos iniciales ' : ''}` +
+        `Total net interest ${result.projection ? 'of the initial terms ' : ''}` +
           `${formatCOP(result.totals.netInterest)}, ` +
-          `tasa ponderada ${formatPercent(result.blendedEA)} efectiva anual.` +
+          `blended rate ${formatPercent(result.blendedEA)} effective annual.` +
           (result.projection
-            ? ` Valor proyectado ${formatCOP(result.projection.totalFinalValue)} al ${formatDateShort(result.projection.finalMaturity)}.`
+            ? ` Projected value ${formatCOP(result.projection.totalFinalValue)} on ${formatDateShort(result.projection.finalMaturity)}.`
             : '') +
           (exceeded === 1
-            ? ' Una entidad supera el tope del seguro.'
+            ? ' One institution is above the deposit-insurance ceiling.'
             : exceeded > 1
-              ? ` ${exceeded} entidades superan el tope del seguro.`
+              ? ` ${exceeded} institutions are above the deposit-insurance ceiling.`
               : ''),
       )
     }, 800)
@@ -134,7 +134,7 @@ export default function App() {
     [form.entities],
   )
 
-  const interestLabel = result?.projection ? 'interés proyectado' : 'interés bruto'
+  const interestLabel = result?.projection ? 'projected interest' : 'gross interest'
   const horizonBeforeFinal = Boolean(
     input.rollover?.mode === 'horizon' &&
       result?.projection &&
@@ -200,7 +200,7 @@ export default function App() {
   }
 
   const onReset = () => {
-    if (!window.confirm('¿Restablecer todos los parámetros? Se borra el escenario guardado.')) {
+    if (!window.confirm('Reset all parameters? The saved scenario is deleted.')) {
       return
     }
     // Cleared, not re-saved: the next autosave stays disabled until the user
@@ -214,7 +214,7 @@ export default function App() {
 
   return (
     <>
-      <h1 className="visually-hidden">Calculadora de escalera de CDT</h1>
+      <h1 className="visually-hidden">CDT ladder calculator</h1>
       <Header
         theme={theme}
         onToggle={() => {
@@ -237,7 +237,7 @@ export default function App() {
               const letter = String.fromCharCode(65 + ((f.nextEntitySeq - 1) % 26))
               return {
                 ...f,
-                entities: [...f.entities, { id: `e${f.nextEntitySeq}`, name: `Entidad ${letter}` }],
+                entities: [...f.entities, { id: `e${f.nextEntitySeq}`, name: `Institution ${letter}` }],
                 nextEntitySeq: f.nextEntitySeq + 1,
               }
             })
@@ -271,11 +271,11 @@ export default function App() {
         <section className="results" aria-labelledby="h-results">
           <div className="results-head">
             <h2 className="section-label" id="h-results">
-              Escalera de vencimientos
+              Maturity ladder
             </h2>
             <div className="actions">
               <button type="button" className="btn-ghost" onClick={onReset}>
-                Restablecer
+                Reset
               </button>
               <button
                 type="button"
@@ -287,7 +287,7 @@ export default function App() {
                 {BUTTON_LABEL}
               </button>
               <button type="button" className="btn-ghost" onClick={onShare}>
-                {shareState === 'copied' ? 'Enlace copiado' : 'Compartir'}
+                {shareState === 'copied' ? 'Link copied' : 'Share'}
               </button>
             </div>
           </div>
@@ -296,9 +296,9 @@ export default function App() {
           </p>
           <p className="visually-hidden" role="status">
             {shareState === 'copied'
-              ? 'Enlace copiado al portapapeles.'
+              ? 'Link copied to the clipboard.'
               : shareState === 'failed'
-                ? 'No se pudo copiar; la URL en la barra de direcciones ya contiene este escenario.'
+                ? 'Copying failed; the URL in the address bar already holds this scenario.'
                 : ''}
           </p>
           <p className="visually-hidden" role="status">
@@ -306,15 +306,15 @@ export default function App() {
           </p>
           {shareState === 'failed' && (
             <p className="notice">
-              No se pudo copiar. La URL en la barra de direcciones ya contiene este escenario.
+              Copying failed. The URL in the address bar already holds this scenario.
             </p>
           )}
           {/* Visible from first paint, so no live region: it would never fire. */}
           {init.urlWasBad && (
             <p className="notice">
               {init.source === 'storage'
-                ? 'El enlace no se pudo leer; se muestra tu escenario guardado.'
-                : 'El enlace no se pudo leer; se muestran los valores iniciales.'}
+                ? 'The link could not be read; your saved scenario is shown.'
+                : 'The link could not be read; the starting values are shown.'}
             </p>
           )}
           {result ? (
@@ -362,23 +362,23 @@ export default function App() {
             </>
           ) : (
             <p className="empty-state" role="status">
-              Corrige los campos marcados para ver la escalera y su calendario.
+              Fix the marked fields to see the ladder and its schedule.
             </p>
           )}
         </section>
       </main>
       <footer>
         <p className="disclaimer">
-          Herramienta de modelado, no es asesoría financiera. Todos los parámetros son definidos
-          por quien la usa: verifica la tarifa de retención y la cobertura del seguro de depósitos
-          vigentes. Los CDT en cooperativas los cubre Fogacoop, no Fogafín: verifica el tope
-          vigente de cada fondo.
+          A modeling tool for CDTs (Colombian term deposits), not financial advice. Every parameter
+          is set by the person using it: check the current withholding rate and deposit-insurance
+          coverage. CDTs held at cooperatives are covered by Fogacoop, not Fogafín: check the
+          current ceiling of each fund.
         </p>
         <p className="colophon">
           © 2026 Sergio Esteban Torres · IBM Plex Mono ·{' '}
           React 18 + Vite ·{' '}
           <a href="https://github.com/estebancitox/lab-cdt-ladder">
-            fuente <span aria-hidden="true">↗</span>
+            source <span aria-hidden="true">↗</span>
           </a>
         </p>
       </footer>
