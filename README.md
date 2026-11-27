@@ -45,7 +45,7 @@ in the UI. It is a modeling tool, not financial advice.
 
 ## Scenarios travel as URLs
 
-"Compartir" encodes the whole scenario (ladder, entities, allocation, fiscal
+"Share" encodes the whole scenario (ladder, entities, allocation, fiscal
 parameters, rollover) into a versioned, strictly-validated URL parameter and
 copies the link; opening it reproduces the scenario exactly. The last
 scenario also persists in localStorage — shared URL wins over saved state,
@@ -69,10 +69,10 @@ the sum is an upper bound: it errs toward warning early, never late.
 
 ## An explanation on demand
 
-"Explícame esta escalera" sends the current scenario — ladder, entities and
+"Explain this ladder" sends the current scenario — ladder, entities and
 fiscal parameters, never the rollover settings — to
 [lab-cdt-ladder-api](https://github.com/estebancitox/lab-cdt-ladder-api),
-which asks a language model for a plain-text explanation in Spanish, and
+which asks a language model for a plain-text explanation in English, and
 renders the reply under the summary readouts. Nothing is sent until the button
 is pressed, nothing is retried on its own, and any edit clears the text, so an
 explanation never outlives the numbers it describes. The panel says where the
@@ -90,19 +90,19 @@ No badge — the pipeline is the statement.
 
 ## Controls
 
-| Input                          | Effect                                                                                                |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| `Capital total`                | Total COP, split near-equally across rungs (the sum is always exact)                                  |
-| `Número de peldaños`           | How many CDTs the ladder holds (1–12)                                                                 |
-| `Días entre vencimientos`      | Days between one maturity and the next; rung _n_ matures at _n_ × spacing                             |
-| `Tasa E.A.`                    | Effective annual rate applied to every rung — user-supplied, never fetched                            |
-| `Base de liquidación`          | Exponent base for the rate conversion: 360 comercial (the CDT-certificate convention, default) or 365 |
-| `Fecha de inicio`              | Purchase date; maturities and the today line follow it                                                |
-| `Retención en la fuente`       | Withholding on interest, editable — check the current tariff                                          |
-| `Entidades` / `Asignación`     | Free-text institutions and per-rung allocation; the insurance ceiling is checked per entity           |
-| `Tope del seguro de depósitos` | Editable coverage ceiling per depositor per institution — check the current figure                    |
-| `Renovación`                   | Off, N renewals, or until a horizon date; reinvests capital + net interest at the same rate           |
-| `Compartir`                    | Copies a URL that reproduces the scenario exactly                                                     |
-| `Explícame esta escalera`      | Sends the scenario to lab-cdt-ladder-api and shows its explanation; any edit clears it                |
-| `Restablecer`                  | Back to defaults; clears the saved scenario                                                           |
-| `claro / oscuro`               | Theme toggle; the instrument plates stay dark in both                                                 |
+| Input                              | Effect                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `Total principal`                  | Total COP, split near-equally across rungs (the sum is always exact)                                    |
+| `Number of rungs`                  | How many CDTs the ladder holds (1–12)                                                                   |
+| `Days between maturities`          | Days between one maturity and the next; rung _n_ matures at _n_ × spacing                               |
+| `E.A. rate`                        | Effective annual rate applied to every rung — user-supplied, never fetched                              |
+| `Day-count basis`                  | Exponent base for the rate conversion: 360 (the commercial year of the CDT certificate, default) or 365 |
+| `Start date`                       | Purchase date; maturities and the today line follow it                                                  |
+| `Withholding tax`                  | Withholding on interest (retención en la fuente), editable — check the current rate                     |
+| `Institutions` / `Rung allocation` | Free-text institutions and per-rung allocation; the insurance ceiling is checked per institution        |
+| `Deposit-insurance ceiling`        | Editable coverage ceiling per depositor per institution — check the current figure                      |
+| `Renewal`                          | Off, N renewals, or until a horizon date; reinvests principal + net interest at the same rate           |
+| `Share`                            | Copies a URL that reproduces the scenario exactly                                                       |
+| `Explain this ladder`              | Sends the scenario to lab-cdt-ladder-api and shows its explanation; any edit clears it                  |
+| `Reset`                            | Back to defaults; clears the saved scenario                                                             |
+| `light / dark`                     | Theme toggle; the instrument plates stay dark in both                                                   |
