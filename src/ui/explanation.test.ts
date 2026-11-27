@@ -14,18 +14,26 @@ const TO_MIDNIGHT_UTC = 10_020
 const NBSP = String.fromCharCode(0xa0)
 
 describe('splitExplanation — SPEC §4 plain text into blocks', () => {
-  it('splits the example into heading, paragraph, heading, paragraph', () => {
+  it('splits the recorded example into heading, three paragraphs, heading, paragraph', () => {
     const blocks = splitExplanation(RECORDED_EXAMPLE.text)
-    expect(blocks.map((b) => b.type)).toEqual(['heading', 'paragraph', 'heading', 'paragraph'])
+    expect(blocks.map((b) => b.type)).toEqual([
+      'heading',
+      'paragraph',
+      'paragraph',
+      'paragraph',
+      'heading',
+      'paragraph',
+    ])
     expect(blocks[0]).toEqual({ type: 'heading', text: 'What happens and when' })
-    expect(blocks[2]).toEqual({ type: 'heading', text: 'Risks' })
-    expect(blocks[3]).toEqual({ type: 'paragraph', text: 'No risks to flag with this data.' })
+    expect(blocks[4]).toEqual({ type: 'heading', text: 'Risks' })
+    expect(blocks[5]).toEqual({ type: 'paragraph', text: 'No risks to flag with this data.' })
     expect(
-      (blocks[1] as { text: string }).text.startsWith(`Your ladder holds COP${NBSP}75,000,000`),
+      (blocks[1] as { text: string }).text.startsWith(`Your ladder holds COP${NBSP}50,000,000`),
     ).toBe(true)
+    expect((blocks[3] as { text: string }).text).toBe(
+      `The ladder pays COP${NBSP}3,109,733 in interest after COP${NBSP}129,572 of withholding tax.`,
+    )
   })
-
-  it.todo('the example is run 1 of healthy-3-rung from the English paid run, and its label is dated')
 
   it('renders the space between "COP" and a digit as a no-break space, and leaves every other space alone', () => {
     expect(
@@ -39,7 +47,7 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
       },
       { type: 'list', items: [{ label: 'Concentration', text: `COP${NBSP}1 in COP two` }] },
     ])
-    expect(RECORDED_EXAMPLE.text).toContain('COP 75,000,000')
+    expect(RECORDED_EXAMPLE.text).toContain('COP 50,000,000')
     expect(RECORDED_EXAMPLE.text).not.toContain(NBSP)
   })
 
