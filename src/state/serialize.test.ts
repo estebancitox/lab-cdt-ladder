@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { deserializeForm, serializeForm } from './serialize'
 import { decodeForm, encodeForm } from './urlCodec'
-import { initialForm } from '../ui/form'
+import { buildScenario, initialForm } from '../ui/form'
 import type { FormState } from '../ui/form'
 
 function sample(): FormState {
   return {
     ...initialForm(),
-    capital: '120.000.000',
+    capital: '120,000,000',
     rungCount: '6',
     spacingDays: '60',
     ea: '13,5',
     dayCountBase: '365',
     retencion: '4',
-    ceiling: '50.000.000',
+    ceiling: '50,000,000',
     startDate: '2026-08-01',
     entities: [
       { id: 'e1', name: 'Banco Andino' },
@@ -55,6 +55,67 @@ describe('serializeForm / deserializeForm', () => {
     ]) {
       expect(deserializeForm(bad)).toBeNull()
     }
+  })
+
+  it('keeps storage version 1: a bump would make every saved scenario and link unreadable', () => {
+    expect(serializeForm(sample()).v).toBe(1)
+  })
+})
+
+describe('amounts saved before the UI moved to English (es-CO dots)', () => {
+  it('load with en-US commas and the same numbers', () => {
+    const legacy = { ...serializeForm(sample()), capital: '120.000.000', ceiling: '50.000.000' }
+    const out = deserializeForm(JSON.parse(JSON.stringify(legacy)))
+    expect(out).not.toBeNull()
+    expect(out!.capital).toBe('120,000,000')
+    expect(out!.ceiling).toBe('50,000,000')
+    const { input, issues } = buildScenario(out!)
+    expect(issues).toEqual([])
+    expect(input.rungs.reduce((a, r) => a + r.principal, 0)).toBe(120_000_000)
+    expect(input.fiscal.insuranceCeiling).toBe(50_000_000)
+  })
+
+  it('a saved default scenario equals the defaults again, so nothing reads as changed', () => {
+    const legacy = { ...serializeForm(initialForm()), capital: '40.000.000', ceiling: '50.000.000' }
+    const out = deserializeForm(JSON.parse(JSON.stringify(legacy)))
+    expect(out).not.toBeNull()
+    expect(out!.capital).toBe(initialForm().capital)
+    expect(out!.ceiling).toBe(initialForm().ceiling)
+  })
+
+  it('a link shared with dots decodes the same way', () => {
+    const out = decodeForm(encodeForm({ ...sample(), capital: '120.000.000', ceiling: '50.000.000' }))
+    expect(out).not.toBeNull()
+    expect(out!.capital).toBe('120,000,000')
+    expect(out!.ceiling).toBe('50,000,000')
+  })
+
+  it('an amount of more than 12 digits, which only a hand-edited link can hold, is left as it came', () => {
+    for (const amount of ['1000000000000', '1.000.000.000.000', '0000000000040000000']) {
+      const out = deserializeForm({ ...serializeForm(sample()), capital: amount, ceiling: amount })
+      expect(out).not.toBeNull()
+      expect(out!.capital).toBe(amount)
+      expect(out!.ceiling).toBe(amount)
+    }
+  })
+
+  it('12 digits regroup, leading zeros included, and keep their number', () => {
+    const out = deserializeForm({
+      ...serializeForm(sample()),
+      capital: '999.999.999.999',
+      ceiling: '040.000.000',
+    })
+    expect(out).not.toBeNull()
+    expect(out!.capital).toBe('999,999,999,999')
+    expect(out!.ceiling).toBe('40,000,000')
+  })
+
+  it('an empty amount stays empty, and the name a user saved is not rewritten', () => {
+    const legacy = { ...serializeForm(sample()), capital: '', entities: [['e1', 'Entidad A']] }
+    const out = deserializeForm(JSON.parse(JSON.stringify(legacy)))
+    expect(out).not.toBeNull()
+    expect(out!.capital).toBe('')
+    expect(out!.entities).toEqual([{ id: 'e1', name: 'Entidad A' }])
   })
 })
 

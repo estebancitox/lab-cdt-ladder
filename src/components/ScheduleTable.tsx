@@ -3,7 +3,7 @@ import type { ScenarioResult } from '../engine'
 
 interface Props {
   result: ScenarioResult
-  /** id → name; the Entidad column renders only when more than one entity exists. */
+  /** id → name; the Institution column renders only when more than one entity exists. */
   entityNames: Record<string, string>
   showEntity: boolean
   /** With a projection above it, say these figures cover the initial terms. */
@@ -14,29 +14,29 @@ export function ScheduleTable({ result, entityNames, showEntity, projected }: Pr
   return (
     <div className="table-scroll">
       <table className="schedule">
-        <caption>Calendario de vencimientos{projected ? ' (plazos iniciales)' : ''}</caption>
+        <caption>Maturity schedule{projected ? ' (initial terms)' : ''}</caption>
         <thead>
           <tr>
             <th scope="col">
               <span aria-hidden="true">#</span>
-              <span className="visually-hidden">Peldaño</span>
+              <span className="visually-hidden">Rung</span>
             </th>
-            <th scope="col">Vence</th>
-            {showEntity && <th scope="col">Entidad</th>}
+            <th scope="col">Matures</th>
+            {showEntity && <th scope="col">Institution</th>}
             <th scope="col" className="num">
-              Plazo
-            </th>
-            <th scope="col" className="num">
-              Monto
+              Term
             </th>
             <th scope="col" className="num">
-              Interés bruto
+              Amount
             </th>
             <th scope="col" className="num">
-              Retención
+              Gross interest
             </th>
             <th scope="col" className="num">
-              Interés neto
+              Withholding
+            </th>
+            <th scope="col" className="num">
+              Net interest
             </th>
           </tr>
         </thead>

@@ -10,46 +10,53 @@ import {
 /** 2026-11-01 21:13 UTC; 10 020 s later is the next 00:00 UTC, 19:00 in Bogotá. */
 const RECEIVED_AT = new Date('2026-11-01T21:13:00Z')
 const TO_MIDNIGHT_UTC = 10_020
+/** U+00A0, built from its code so no invisible character sits in this file. */
+const NBSP = String.fromCharCode(0xa0)
 
 describe('splitExplanation — SPEC §4 plain text into blocks', () => {
-  it('splits the recorded example into heading, paragraph, paragraph, heading, paragraph', () => {
+  it('splits the example into heading, paragraph, heading, paragraph', () => {
     const blocks = splitExplanation(RECORDED_EXAMPLE.text)
-    expect(blocks.map((b) => b.type)).toEqual([
-      'heading',
-      'paragraph',
-      'paragraph',
-      'heading',
-      'paragraph',
-    ])
-    expect(blocks[0]).toEqual({ type: 'heading', text: 'Qué pasa y cuándo' })
-    expect(blocks[3]).toEqual({ type: 'heading', text: 'Riesgos' })
-    expect(blocks[4]).toEqual({ type: 'paragraph', text: 'Sin riesgos para señalar con estos datos.' })
-    expect((blocks[1] as { text: string }).text.startsWith('Tu escalera tiene $\u00A050.000.000')).toBe(true)
+    expect(blocks.map((b) => b.type)).toEqual(['heading', 'paragraph', 'heading', 'paragraph'])
+    expect(blocks[0]).toEqual({ type: 'heading', text: 'What happens and when' })
+    expect(blocks[2]).toEqual({ type: 'heading', text: 'Risks' })
+    expect(blocks[3]).toEqual({ type: 'paragraph', text: 'No risks to flag with this data.' })
+    expect(
+      (blocks[1] as { text: string }).text.startsWith(`Your ladder holds COP${NBSP}75,000,000`),
+    ).toBe(true)
   })
 
-  it('renders the space between "$" and a digit as a no-break space, and leaves every other space alone', () => {
-    expect(splitExplanation('Paga $ 3.109.733 de $ 50.000.000; $5 y $ x quedan.\n- Concentración: $ 1 en $ dos')).toEqual([
-      { type: 'paragraph', text: 'Paga $\u00A03.109.733 de $\u00A050.000.000; $5 y $ x quedan.' },
-      { type: 'list', items: [{ label: 'Concentración', text: '$\u00A01 en $ dos' }] },
+  it.todo('the example is run 1 of healthy-3-rung from the English paid run, and its label is dated')
+
+  it('renders the space between "COP" and a digit as a no-break space, and leaves every other space alone', () => {
+    expect(
+      splitExplanation(
+        'Pays COP 3,109,733 of COP 50,000,000; COP5, COP x and ESCOP 7 stay.\n- Concentration: COP 1 in COP two',
+      ),
+    ).toEqual([
+      {
+        type: 'paragraph',
+        text: `Pays COP${NBSP}3,109,733 of COP${NBSP}50,000,000; COP5, COP x and ESCOP 7 stay.`,
+      },
+      { type: 'list', items: [{ label: 'Concentration', text: `COP${NBSP}1 in COP two` }] },
     ])
-    expect(RECORDED_EXAMPLE.text).toContain('$ 50.000.000')
-    expect(RECORDED_EXAMPLE.text).not.toContain('\u00A0')
+    expect(RECORDED_EXAMPLE.text).toContain('COP 75,000,000')
+    expect(RECORDED_EXAMPLE.text).not.toContain(NBSP)
   })
 
   it('groups consecutive "- " lines into one list and ignores surrounding blank lines', () => {
     const text =
-      '\n\nQué pasa y cuándo\n\nUn párrafo.\n\nRiesgos\n\n' +
-      '- Tope del seguro: una frase.\n- Concentración: otra frase.\n- Diferencia de tasa: la tercera.\n\n\n'
+      '\n\nWhat happens and when\n\nA paragraph.\n\nRisks\n\n' +
+      '- Deposit-insurance ceiling: one sentence.\n- Concentration: another sentence.\n- Rate difference: the third.\n\n\n'
     expect(splitExplanation(text)).toEqual([
-      { type: 'heading', text: 'Qué pasa y cuándo' },
-      { type: 'paragraph', text: 'Un párrafo.' },
-      { type: 'heading', text: 'Riesgos' },
+      { type: 'heading', text: 'What happens and when' },
+      { type: 'paragraph', text: 'A paragraph.' },
+      { type: 'heading', text: 'Risks' },
       {
         type: 'list',
         items: [
-          { label: 'Tope del seguro', text: 'una frase.' },
-          { label: 'Concentración', text: 'otra frase.' },
-          { label: 'Diferencia de tasa', text: 'la tercera.' },
+          { label: 'Deposit-insurance ceiling', text: 'one sentence.' },
+          { label: 'Concentration', text: 'another sentence.' },
+          { label: 'Rate difference', text: 'the third.' },
         ],
       },
     ])
@@ -58,17 +65,17 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
   it('splits off each of the four §4 risk labels when the item opens with it and a colon', () => {
     expect(
       splitExplanation(
-        '- Tope del seguro:   Banco A supera el tope.\n- Concentración: 70 % en una entidad.\n' +
-          '- Vencimientos agrupados: los peldaños 1 y 2.\n- Diferencia de tasa:',
+        '- Deposit-insurance ceiling:   Banco A is above the ceiling.\n- Concentration: 70% in one institution.\n' +
+          '- Clustered maturities: rungs 1 and 2.\n- Rate difference:',
       ),
     ).toEqual([
       {
         type: 'list',
         items: [
-          { label: 'Tope del seguro', text: 'Banco A supera el tope.' },
-          { label: 'Concentración', text: '70 % en una entidad.' },
-          { label: 'Vencimientos agrupados', text: 'los peldaños 1 y 2.' },
-          { label: 'Diferencia de tasa', text: '' },
+          { label: 'Deposit-insurance ceiling', text: 'Banco A is above the ceiling.' },
+          { label: 'Concentration', text: '70% in one institution.' },
+          { label: 'Clustered maturities', text: 'rungs 1 and 2.' },
+          { label: 'Rate difference', text: '' },
         ],
       },
     ])
@@ -77,39 +84,51 @@ describe('splitExplanation — SPEC §4 plain text into blocks', () => {
   it('keeps an item whole when its label is not one of the four, has no colon, or is not at the start', () => {
     expect(
       splitExplanation(
-        '- Otra cosa: una frase.\n- Concentración alta en una entidad.\n- Nota sobre Tope del seguro: x.\n- tope del seguro: y.',
+        '- Something else: a sentence.\n- Concentration high in one institution.\n' +
+          '- A note on Deposit-insurance ceiling: x.\n- deposit-insurance ceiling: y.',
       ),
     ).toEqual([
       {
         type: 'list',
         items: [
-          { label: null, text: 'Otra cosa: una frase.' },
-          { label: null, text: 'Concentración alta en una entidad.' },
-          { label: null, text: 'Nota sobre Tope del seguro: x.' },
-          { label: null, text: 'tope del seguro: y.' },
+          { label: null, text: 'Something else: a sentence.' },
+          { label: null, text: 'Concentration high in one institution.' },
+          { label: null, text: 'A note on Deposit-insurance ceiling: x.' },
+          { label: null, text: 'deposit-insurance ceiling: y.' },
         ],
       },
     ])
   })
 
+  it('no longer recognises the headers and labels of the Spanish v1 contract', () => {
+    expect(splitExplanation('Riesgos\n\n- Tope del seguro: una frase.')).toEqual([
+      { type: 'paragraph', text: 'Riesgos' },
+      { type: 'list', items: [{ label: null, text: 'Tope del seguro: una frase.' }] },
+    ])
+  })
+
   it('joins the lines of one paragraph and starts a new list after a paragraph', () => {
-    expect(splitExplanation('línea uno\nlínea dos\n- a\ntexto\n- b')).toEqual([
-      { type: 'paragraph', text: 'línea uno línea dos' },
+    expect(splitExplanation('line one\nline two\n- a\ntext\n- b')).toEqual([
+      { type: 'paragraph', text: 'line one line two' },
       { type: 'list', items: [{ label: null, text: 'a' }] },
-      { type: 'paragraph', text: 'texto' },
+      { type: 'paragraph', text: 'text' },
       { type: 'list', items: [{ label: null, text: 'b' }] },
     ])
   })
 
   it('recognises a bolded header and bullet marks the way SPEC §11.1 and §11.6 do, keeping the item text as sent', () => {
-    expect(splitExplanation('**Riesgos**\n\n- **Tope del seguro:** a.\n• Concentración: b.\n•Diferencia de tasa: c.')).toEqual([
-      { type: 'heading', text: 'Riesgos' },
+    expect(
+      splitExplanation(
+        '**Risks**\n\n- **Deposit-insurance ceiling:** a.\n• Concentration: b.\n•Rate difference: c.',
+      ),
+    ).toEqual([
+      { type: 'heading', text: 'Risks' },
       {
         type: 'list',
         items: [
-          { label: null, text: '**Tope del seguro:** a.' },
-          { label: 'Concentración', text: 'b.' },
-          { label: 'Diferencia de tasa', text: 'c.' },
+          { label: null, text: '**Deposit-insurance ceiling:** a.' },
+          { label: 'Concentration', text: 'b.' },
+          { label: 'Rate difference', text: 'c.' },
         ],
       },
     ])
@@ -155,14 +174,14 @@ describe('messageFor — the copy per failure', () => {
         RECEIVED_AT,
       ),
     ).toBe(
-      `Ya usaste todas las explicaciones de hoy desde tu conexión. Vuelven a estar disponibles a las ${at}.`,
+      `You have used all of the explanations available today from your connection. They are available again at ${at}.`,
     )
   })
 
   it('limit/ip without retry-after stops after the first sentence', () => {
     expect(
       messageFor({ kind: 'limit', scope: 'ip', retryAfterSeconds: null, text: 'x' }, RECEIVED_AT),
-    ).toBe('Ya usaste todas las explicaciones de hoy desde tu conexión.')
+    ).toBe('You have used all of the explanations available today from your connection.')
   })
 
   it('limit/daily with retry-after names the local hour', () => {
@@ -171,34 +190,34 @@ describe('messageFor — the copy per failure', () => {
         { kind: 'limit', scope: 'daily', retryAfterSeconds: TO_MIDNIGHT_UTC, text: 'x' },
         RECEIVED_AT,
       ),
-    ).toBe(`La demo alcanzó su tope de explicaciones de hoy. Vuelve a estar disponible a las ${at}.`)
+    ).toBe(
+      `The demo has reached its limit of explanations for today. It is available again at ${at}.`,
+    )
   })
 
   it('limit/daily without retry-after says tomorrow', () => {
     expect(
       messageFor({ kind: 'limit', scope: 'daily', retryAfterSeconds: null, text: 'x' }, RECEIVED_AT),
-    ).toBe('La demo alcanzó su tope de explicaciones de hoy. Vuelve mañana.')
+    ).toBe('The demo has reached its limit of explanations for today. Come back tomorrow.')
   })
 
   it('invalid names the issue when there is one, and shows the fixed text alone otherwise', () => {
     expect(
       messageFor(
-        { kind: 'invalid', issue: 'El plazo no puede superar 3.650 días.', text: 'Fijo.' },
+        { kind: 'invalid', issue: 'The term cannot exceed 3,650 days.', text: 'Fixed.' },
         RECEIVED_AT,
       ),
-    ).toBe('Este escenario no se puede explicar: El plazo no puede superar 3.650 días.')
-    expect(messageFor({ kind: 'invalid', issue: null, text: 'Fijo.' }, RECEIVED_AT)).toBe('Fijo.')
+    ).toBe('This scenario cannot be explained: The term cannot exceed 3,650 days.')
+    expect(messageFor({ kind: 'invalid', issue: null, text: 'Fixed.' }, RECEIVED_AT)).toBe('Fixed.')
   })
 
   it('throttled, unavailable and network', () => {
-    expect(messageFor({ kind: 'throttled' }, RECEIVED_AT)).toBe(
-      'El servicio está pausado en este momento.',
-    )
-    expect(messageFor({ kind: 'unavailable', text: 'Texto fijo del API.' }, RECEIVED_AT)).toBe(
-      'Texto fijo del API.',
+    expect(messageFor({ kind: 'throttled' }, RECEIVED_AT)).toBe('The service is paused right now.')
+    expect(messageFor({ kind: 'unavailable', text: 'Fixed text of the API.' }, RECEIVED_AT)).toBe(
+      'Fixed text of the API.',
     )
     expect(messageFor({ kind: 'network' }, RECEIVED_AT)).toBe(
-      'No se pudo contactar el servicio. Revisa tu conexión e inténtalo de nuevo.',
+      'The service could not be reached. Check your connection and try again.',
     )
   })
 })

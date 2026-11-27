@@ -1,7 +1,7 @@
 import type { ISODate, ScenarioInput } from '../engine'
 
 /**
- * Client for lab-cdt-ladder-api (SPEC v1.5). This is the only module that
+ * Client for lab-cdt-ladder-api (SPEC 2.0). This is the only module that
  * speaks HTTP: it builds the request from a ScenarioInput, performs one call
  * with an injected fetch, and maps every reply or failure onto ExplainOutcome.
  * It never throws, and it never retries: each call spends money on the API's
@@ -30,11 +30,11 @@ export const MAX_RETRY_AFTER_SECONDS = 86_400
  * carries its own `text`, and these stand in when a body has none (a platform
  * reply, an unparsable body, an unknown status).
  */
-export const ERROR_MESSAGE = 'No puedo explicar esta escalera: los datos recibidos no son válidos.'
+export const ERROR_MESSAGE = 'I cannot explain this ladder: the data received is not valid.'
 export const UPSTREAM_MESSAGE =
-  'No puedo explicar esta escalera en este momento: el servicio no está disponible.'
+  'I cannot explain this ladder right now: the service is unavailable.'
 export const LIMIT_MESSAGE =
-  'No puedo explicar esta escalera por ahora: se alcanzó el límite diario de solicitudes.'
+  'I cannot explain this ladder for now: the daily request limit has been reached.'
 
 /** SPEC §2.2: the schema has `additionalProperties: false` at every level. */
 export interface ExplainRequest {

@@ -10,15 +10,15 @@ import type { FormState } from './form'
 
 function form(over: Partial<FormState>): FormState {
   return {
-    capital: '50.000.000',
+    capital: '50,000,000',
     rungCount: '4',
     spacingDays: '90',
     ea: '10',
     dayCountBase: '360',
     retencion: '4',
-    ceiling: '50.000.000',
+    ceiling: '50,000,000',
     startDate: '2026-07-26',
-    entities: [{ id: 'e1', name: 'Entidad A' }],
+    entities: [{ id: 'e1', name: 'Institution A' }],
     allocation: [],
     nextEntitySeq: 2,
     rolloverMode: 'off',
@@ -33,15 +33,16 @@ function codes(f: FormState): string[] {
 }
 
 describe('formatCapitalInput', () => {
-  it('groups digits with es-CO dots and strips everything else', () => {
-    expect(formatCapitalInput('50000000')).toBe('50.000.000')
-    expect(formatCapitalInput('50.000.000')).toBe('50.000.000')
-    expect(formatCapitalInput('abc12x34')).toBe('1.234')
+  it('groups digits with en-US commas and strips everything else, es-CO dots included', () => {
+    expect(formatCapitalInput('50000000')).toBe('50,000,000')
+    expect(formatCapitalInput('50,000,000')).toBe('50,000,000')
+    expect(formatCapitalInput('50.000.000')).toBe('50,000,000')
+    expect(formatCapitalInput('abc12x34')).toBe('1,234')
     expect(formatCapitalInput('')).toBe('')
   })
 
   it('caps input at 12 digits so engine output stays peso-exact', () => {
-    expect(formatCapitalInput('9'.repeat(20))).toBe('999.999.999.999')
+    expect(formatCapitalInput('9'.repeat(20))).toBe('999,999,999,999')
   })
 })
 
@@ -54,7 +55,7 @@ describe('buildScenario — percent parsing', () => {
     }
   })
 
-  it('converts retención to a fraction', () => {
+  it('converts the withholding rate to a fraction', () => {
     const { input } = buildScenario(form({ retencion: '4' }))
     expect(input.fiscal.retencionRate).toBeCloseTo(0.04, 12)
   })
@@ -63,11 +64,11 @@ describe('buildScenario — percent parsing', () => {
     expect(codes(form({ ea: '100' }))).toEqual([])
     expect(codes(form({ ea: '100,1' }))).toContain('ea_invalid')
     expect(codes(form({ ea: '-1' }))).toContain('ea_invalid')
-    expect(codes(form({ ea: 'diez' }))).toContain('ea_invalid')
+    expect(codes(form({ ea: 'ten' }))).toContain('ea_invalid')
     expect(codes(form({ ea: '' }))).toContain('ea_invalid')
   })
 
-  it('rejects retención of exactly 100 (exclusive bound)', () => {
+  it('rejects a withholding rate of exactly 100 (exclusive bound)', () => {
     expect(codes(form({ retencion: '100' }))).toContain('retencion_invalid')
     expect(codes(form({ retencion: '0' }))).toEqual([])
   })
@@ -75,7 +76,7 @@ describe('buildScenario — percent parsing', () => {
 
 describe('buildScenario — ladder shape', () => {
   it('splits capital exactly and terms are n × spacing', () => {
-    const { input, issues } = buildScenario(form({ capital: '50.000.000', rungCount: '3' }))
+    const { input, issues } = buildScenario(form({ capital: '50,000,000', rungCount: '3' }))
     expect(issues).toEqual([])
     expect(input.rungs.map((r) => r.principal)).toEqual([16_666_667, 16_666_667, 16_666_666])
     expect(input.rungs.map((r) => r.days)).toEqual([90, 180, 270])
@@ -107,7 +108,7 @@ describe('buildScenario — ladder shape', () => {
     expect(codes(form({ startDate: '2026-02-30' }))).toContain('start_date_invalid')
   })
 
-  it('defaults to base 360 comercial and passes 365 through', () => {
+  it('defaults to base 360 and passes 365 through', () => {
     expect(buildScenario(form({})).input.dayCountBase).toBe(360)
     expect(buildScenario(form({ dayCountBase: '365' })).input.dayCountBase).toBe(365)
     expect(codes(form({ dayCountBase: '364' }))).toContain('base_invalid')
@@ -157,8 +158,8 @@ describe('buildScenario — rollover config', () => {
 
 describe('buildScenario — entities, allocation, ceiling', () => {
   const twoEntities = [
-    { id: 'e1', name: 'Entidad A' },
-    { id: 'e2', name: 'Entidad B' },
+    { id: 'e1', name: 'Institution A' },
+    { id: 'e2', name: 'Institution B' },
   ]
 
   it('parses the ceiling like capital and rejects an empty field', () => {
@@ -184,10 +185,10 @@ describe('buildScenario — entities, allocation, ceiling', () => {
   })
 
   it('blank entity names never block the math — fallback name plus a soft issue', () => {
-    const f = form({ entities: [{ id: 'e1', name: 'Entidad A' }, { id: 'e2', name: '   ' }] })
+    const f = form({ entities: [{ id: 'e1', name: 'Institution A' }, { id: 'e2', name: '   ' }] })
     const { input, issues } = buildScenario(f)
     expect(issues).toEqual([])
-    expect(input.entities[1].name).toBe('Entidad 2')
+    expect(input.entities[1].name).toBe('Institution 2')
     expect(entitySoftIssues(f)[1]?.code).toBe('entity_name_empty')
   })
 
@@ -220,7 +221,9 @@ describe('fieldForPath', () => {
 describe('initialForm', () => {
   it('prefills the labeled example scenario with today as start date', () => {
     const f = initialForm()
-    expect(f.capital).toBe('40.000.000')
+    expect(f.capital).toBe('40,000,000')
+    expect(f.ceiling).toBe('50,000,000')
+    expect(f.entities).toEqual([{ id: 'e1', name: 'Institution A' }])
     expect(f.rungCount).toBe('1')
     expect(f.retencion).toBe('4')
     expect(f.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
@@ -228,7 +231,7 @@ describe('initialForm', () => {
 
   it('the pristine default stays under the default insurance ceiling', () => {
     // Two reviewers flagged an alarm-first first paint; the default must
-    // never open on TOPE SUPERADO. 40M + gross at 10 % over 90/360 < 50M.
+    // never open on CEILING EXCEEDED. 40M + gross at 10 % over 90/360 < 50M.
     const { input, issues } = buildScenario(initialForm())
     expect(issues).toEqual([])
     const gross = Math.round(40_000_000 * (Math.pow(1.1, 90 / 360) - 1))

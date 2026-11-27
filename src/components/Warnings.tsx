@@ -3,7 +3,7 @@ import type { EntityExposure } from '../engine'
 
 interface Props {
   exposures: EntityExposure[]
-  /** 'interés bruto' without rollover, 'interés proyectado' with it. */
+  /** 'gross interest' without rollover, 'projected interest' with it. */
   interestLabel: string
 }
 
@@ -16,13 +16,13 @@ export function Warnings({ exposures, interestLabel }: Props) {
   if (exceeded.length === 0) return null
   return (
     <div className="warnings">
-      <p className="warnings-label">Tope superado</p>
+      <p className="warnings-label">Ceiling exceeded</p>
       <ul>
         {exceeded.map((e) => (
           <li key={e.entityId}>
-            <strong>{e.entityName}</strong>: la exposición de {formatCOP(e.exposure)} (capital más{' '}
-            {interestLabel}) supera el tope de {formatCOP(e.ceiling)} en {formatCOP(e.excess)}. El
-            excedente no está cubierto por el seguro de depósitos.
+            <strong>{e.entityName}</strong>: exposure of {formatCOP(e.exposure)} (principal plus{' '}
+            {interestLabel}) is above the ceiling of {formatCOP(e.ceiling)} by{' '}
+            {formatCOP(e.excess)}. The excess is not covered by deposit insurance.
           </li>
         ))}
       </ul>

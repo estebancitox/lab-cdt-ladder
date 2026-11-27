@@ -1,4 +1,4 @@
-import { initialForm, MAX_ENTITIES, MAX_RUNGS } from '../ui/form'
+import { formatCapitalInput, initialForm, MAX_ENTITIES, MAX_RUNGS } from '../ui/form'
 import type { FormState, RolloverMode } from '../ui/form'
 
 /**
@@ -53,6 +53,18 @@ export function serializeForm(form: FormState): SerializedForm {
 
 function str(v: unknown, maxLen: number): string | null {
   return typeof v === 'string' && v.length <= maxLen ? v : null
+}
+
+/**
+ * An amount as the inputs group it today, when that keeps its number. A scenario
+ * saved or shared before the UI moved to English holds es-CO dots ('40.000.000');
+ * the grouped text is what the input shows and what ScenarioForm compares with
+ * the defaults to open the advanced block. formatCapitalInput keeps 12 digits,
+ * all the input ever let through. A hand-edited link can carry more, and that
+ * amount is left as it came rather than cut to a different one.
+ */
+function regroupAmount(amount: string): string {
+  return amount.replace(/\D/g, '').length <= 12 ? formatCapitalInput(amount) : amount
 }
 
 export function deserializeForm(data: unknown): FormState | null {
@@ -114,13 +126,13 @@ export function deserializeForm(data: unknown): FormState | null {
   const base = initialForm()
   return {
     ...base,
-    capital,
+    capital: regroupAmount(capital),
     rungCount,
     spacingDays,
     ea,
     dayCountBase,
     retencion,
-    ceiling,
+    ceiling: regroupAmount(ceiling),
     startDate,
     entities,
     allocation,

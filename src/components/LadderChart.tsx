@@ -71,13 +71,13 @@ export function LadderChart({ rungs, startDate, today, projections }: Props) {
   const first = rungs[0]
   const last = rungs[rungs.length - 1]
   const label =
-    `Línea de tiempo de ${rungs.length} CDT desde ${formatDateShort(startDate)}. ` +
-    `Primer vencimiento ${formatDateShort(first.maturityDate)}, último ${formatDateShort(last.maturityDate)}. ` +
+    `Timeline of ${rungs.length} ${rungs.length === 1 ? 'CDT' : 'CDTs'} from ${formatDateShort(startDate)}. ` +
+    `First maturity ${formatDateShort(first.maturityDate)}, last ${formatDateShort(last.maturityDate)}. ` +
     (projections && projections.length > 0
-      ? `Incluye renovaciones proyectadas hasta ${formatDateShort(
+      ? `Includes projected renewals through ${formatDateShort(
           rungs.reduce((max, r) => (chainEnd(r) > max ? chainEnd(r) : max), first.maturityDate),
-        )}. El detalle está en las tablas Calendario de vencimientos y Proyección de renovación.`
-      : 'El detalle está en la tabla Calendario de vencimientos.')
+        )}. Details are in the Maturity schedule and Renewal projection tables.`
+      : 'Details are in the Maturity schedule table.')
 
   return (
     <div ref={ref} className="ladder-wrap">
@@ -168,7 +168,7 @@ export function LadderChart({ rungs, startDate, today, projections }: Props) {
           <g>
             <line className="today-line" x1={x(todayDay)} y1={M_TOP - 6} x2={x(todayDay)} y2={axisY} />
             <text className="today-label" x={x(todayDay) + 5} y={M_TOP - 8}>
-              hoy
+              today
             </text>
           </g>
         )}
@@ -176,14 +176,14 @@ export function LadderChart({ rungs, startDate, today, projections }: Props) {
       {projections && projections.length > 0 && (
         <p className="chart-legend">
           <span>
-            <span className="sw sw-initial" aria-hidden="true" /> plazo inicial
+            <span className="sw sw-initial" aria-hidden="true" /> initial term
           </span>
           <span>
-            <span className="sw sw-renewal" aria-hidden="true" /> renovación proyectada
+            <span className="sw sw-renewal" aria-hidden="true" /> projected renewal
           </span>
           {projections.some((p) => p.hasStub) && (
             <span>
-              <span className="sw sw-stub" aria-hidden="true" /> renovación parcial
+              <span className="sw sw-stub" aria-hidden="true" /> partial renewal
             </span>
           )}
         </p>

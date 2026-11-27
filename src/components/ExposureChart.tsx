@@ -5,7 +5,7 @@ import { useContainerWidth } from '../ui/useContainerWidth'
 interface Props {
   exposures: EntityExposure[]
   ceiling: number
-  /** 'interés bruto' without rollover, 'interés proyectado' with it. */
+  /** 'gross interest' without rollover, 'projected interest' with it. */
   interestLabel: string
 }
 
@@ -34,15 +34,15 @@ export function ExposureChart({ exposures, ceiling, interestLabel }: Props) {
   const status =
     n === 1
       ? exceededCount === 1
-        ? 'La entidad lo supera. '
-        : 'La entidad está dentro del tope. '
+        ? 'The institution is above it. '
+        : 'The institution is within the ceiling. '
       : exceededCount === 0
-        ? `Ninguna de las ${n} entidades lo supera. `
-        : `${exceededCount} de ${n} entidades lo ${exceededCount === 1 ? 'supera' : 'superan'}. `
+        ? `None of the ${n} institutions is above it. `
+        : `${exceededCount} of ${n} institutions ${exceededCount === 1 ? 'is' : 'are'} above it. `
   const label =
-    `Exposición por entidad frente al tope del seguro de depósitos, ${formatCOP(ceiling)}. ` +
+    `Exposure by institution against the deposit-insurance ceiling, ${formatCOP(ceiling)}. ` +
     status +
-    'El detalle está en la tabla Exposición por entidad.'
+    'Details are in the Exposure by institution table.'
 
   return (
     <div ref={ref} className="ladder-wrap">
@@ -58,7 +58,7 @@ export function ExposureChart({ exposures, ceiling, interestLabel }: Props) {
             Label flips to the left of the line when it would clip at the right edge. */}
         <line className="today-line" x1={x(ceiling)} y1={M_TOP - 12} x2={x(ceiling)} y2={height - M_BOTTOM} />
         {(() => {
-          const text = `tope ${formatCOP(ceiling)}`
+          const text = `ceiling ${formatCOP(ceiling)}`
           const fitsRight = x(ceiling) + 5 + text.length * CHAR_W < width - M_RIGHT
           return (
             <text
@@ -119,13 +119,13 @@ export function ExposureChart({ exposures, ceiling, interestLabel }: Props) {
       </svg>
       <p className="chart-legend">
         <span>
-          <span className="sw sw-principal" aria-hidden="true" /> capital
+          <span className="sw sw-principal" aria-hidden="true" /> principal
         </span>
         <span>
           <span className="sw sw-interest" aria-hidden="true" /> {interestLabel}
         </span>
         <span>
-          <span className="sw sw-excess" aria-hidden="true" /> supera el tope
+          <span className="sw sw-excess" aria-hidden="true" /> above the ceiling
         </span>
       </p>
     </div>
@@ -145,21 +145,21 @@ export function ExposureTable({
     <div className="table-scroll">
       <table className="schedule">
         <caption>
-          Exposición por entidad ({projected ? 'saldo máximo proyectado' : 'al vencimiento'})
+          Exposure by institution ({projected ? 'projected peak balance' : 'at maturity'})
         </caption>
         <thead>
           <tr>
-            <th scope="col">Entidad</th>
+            <th scope="col">Institution</th>
             <th scope="col" className="num">
-              Capital
+              Principal
             </th>
             <th scope="col" className="num">
               {interestLabel.charAt(0).toUpperCase() + interestLabel.slice(1)}
             </th>
             <th scope="col" className="num">
-              Exposición
+              Exposure
             </th>
-            <th scope="col">Estado</th>
+            <th scope="col">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -169,7 +169,7 @@ export function ExposureTable({
               <td className="num">{formatCOP(e.principal)}</td>
               <td className="num">{formatCOP(e.interest)}</td>
               <td className="num">{formatCOP(e.exposure)}</td>
-              <td>{e.exceeded ? `supera el tope en ${formatCOP(e.excess)}` : 'dentro del tope'}</td>
+              <td>{e.exceeded ? `above the ceiling by ${formatCOP(e.excess)}` : 'within the ceiling'}</td>
             </tr>
           ))}
         </tbody>
