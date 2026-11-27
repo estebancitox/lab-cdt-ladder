@@ -7,7 +7,7 @@ deployed by CI.
 
 **Live demo:** <https://estebancitox.github.io/lab-cdt-ladder/>
 
-![The calculator answering "Explícame esta escalera": the busy state "Pensando… tarda unos segundos", then the explanation arriving and naming the "Tope del seguro" risk](demo.gif)
+![The calculator answering "Explain this ladder": the panel's frame traces while it waits, showing what was sent and the seconds elapsed, then the explanation arrives in 4.1 s and reports no risks to flag](demo.gif)
 
 ## Why this one has a toolchain
 
